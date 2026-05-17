@@ -2,6 +2,7 @@ package com.example.stockapp
 
 import com.google.gson.annotations.SerializedName
 
+//Data classes for the time series responses
 data class IntradayResponse(
     @SerializedName("Time Series (5min)") val timeSeries: Map<String, OHLCData>?
 )

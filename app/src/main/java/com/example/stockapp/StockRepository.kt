@@ -9,6 +9,8 @@ class StockRepository(private val dao: StockDao) {
 
     val watchlist: LiveData<List<StockEntity>> = dao.getAllStocks()
 
+//    calls the Alpha Vantage API to get a quote then creates a StockEntity object which is saved to the
+//    room db and returns it
     suspend fun addStock(ticker: String): StockEntity? {
         try {
             val response = RetrofitClient.api.getQuote(symbol = ticker)
@@ -33,6 +35,7 @@ class StockRepository(private val dao: StockDao) {
         }
     }
 
+//    sync stocks to the users Firestore backup
     fun backupToFirestore(stock: StockEntity) {
         val db = Firebase.firestore
         val userId = Firebase.auth.currentUser?.uid ?: return
@@ -47,7 +50,7 @@ class StockRepository(private val dao: StockDao) {
                 "changePercent" to stock.changePercent
             ))
     }
-
+//delete stock from users firestore backup
     fun deleteFromFirestore(ticker: String) {
         val db = Firebase.firestore
         val userId = Firebase.auth.currentUser?.uid ?: return
@@ -58,6 +61,8 @@ class StockRepository(private val dao: StockDao) {
             .delete()
     }
 
+//    fetches all firestore docs and inserts them into the room db. This happens after a user
+//    logs in.
     suspend fun restoreFromFirestore() {
         val db = Firebase.firestore
         val userId = Firebase.auth.currentUser?.uid ?: return
@@ -77,6 +82,8 @@ class StockRepository(private val dao: StockDao) {
             }
     }
 
+//calls the daily time series endpoint from the API and then seperates it into 1 day, 1 month,
+//1 year periods
     suspend fun getChartData(ticker: String, period: String): List<Float> {
         return try {
             val response = RetrofitClient.api.getDaily(symbol = ticker)
@@ -95,6 +102,7 @@ class StockRepository(private val dao: StockDao) {
         }
     }
 
+//    calls the functions from StockDao
     suspend fun clearLocalData() {
         dao.deleteAllStocks()
     }

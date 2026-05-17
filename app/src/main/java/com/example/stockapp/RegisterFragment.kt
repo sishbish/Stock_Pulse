@@ -11,6 +11,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.stockapp.databinding.FragmentLoginBinding
 import com.google.firebase.auth.FirebaseAuth
 
+//reuses login layout from the login page
 class RegisterFragment : Fragment() {
 
     private var _binding: FragmentLoginBinding? = null
@@ -36,6 +37,7 @@ class RegisterFragment : Fragment() {
         binding.btnLogin.text = "Register"
         binding.tvRegister.text = "Already have an account? Login"
 
+//        shows toast if user has not filled in all fields
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
@@ -45,16 +47,20 @@ class RegisterFragment : Fragment() {
                 return@setOnClickListener
             }
 
+//            on success, it restores from firestore then navigates to the dashboard
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnSuccessListener {
                     viewModel.restoreFromFirestore()
                     findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment)
                 }
+
+//                shows toast for failure
                 .addOnFailureListener {
                     Toast.makeText(requireContext(), "Registration failed: ${it.message}", Toast.LENGTH_LONG).show()
                 }
         }
 
+//        navigate to login fragment
         binding.tvRegister.setOnClickListener {
             findNavController().navigate(R.id.action_registerFragment_to_loginFragment)
         }

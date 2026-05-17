@@ -5,6 +5,8 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
+//object that constructs the Retrofit instance for Alpha Vantage
+//HttpLoggingInterceptor used for debugging
 object RetrofitClient {
     val api: AlphaVantageApi by lazy {
         val logging = HttpLoggingInterceptor().apply {

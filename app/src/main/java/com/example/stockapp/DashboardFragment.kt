@@ -13,6 +13,7 @@ import com.google.firebase.auth.FirebaseAuth
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 
+//main screen. Sets up recycler view with StockAdapter
 class DashboardFragment : Fragment() {
 
     private var _binding: FragmentDashboardBinding? = null
@@ -32,6 +33,8 @@ class DashboardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+//        clicking a stock navigates to StockDetailFragment with ticker as an argument
         adapter = StockAdapter { stock ->
             val bundle = Bundle().apply { putString("ticker", stock.ticker) }
             findNavController().navigate(R.id.action_dashboardFragment_to_stockDetailFragment, bundle)
@@ -45,6 +48,7 @@ class DashboardFragment : Fragment() {
             findNavController().navigate(R.id.action_dashboardFragment_to_addStockFragment)
         }
 
+//        Implements swipe to delete when a stock is swiped
         val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
         ) {
@@ -54,6 +58,7 @@ class DashboardFragment : Fragment() {
                 target: RecyclerView.ViewHolder
             ): Boolean = false
 
+//            calls the deleteStock method when swiped
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val stock = adapter.stocks[viewHolder.adapterPosition]
                 viewModel.deleteStock(stock)
@@ -61,6 +66,7 @@ class DashboardFragment : Fragment() {
         })
         itemTouchHelper.attachToRecyclerView(binding.recyclerView)
 
+//        toolbar has a logout that clears local data, signs out of firebase and navigates back to login
         binding.toolbar.inflateMenu(R.menu.dashboard_menu)
         binding.toolbar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -73,6 +79,7 @@ class DashboardFragment : Fragment() {
             true
         }
 
+//        observes watchlist to keep list up to date
         viewModel.watchlist.observe(viewLifecycleOwner) { stocks ->
             adapter.stocks = stocks
             adapter.notifyDataSetChanged()

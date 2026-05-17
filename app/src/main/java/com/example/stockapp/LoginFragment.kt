@@ -11,6 +11,8 @@ import androidx.navigation.fragment.findNavController
 import com.example.stockapp.databinding.FragmentLoginBinding
 import com.google.firebase.auth.FirebaseAuth
 
+//Handles firebase email/password login. Checks if a user is signed in and skips to the dashboard if they are
+
 class LoginFragment : Fragment() {
 
     private var _binding: FragmentLoginBinding? = null
@@ -38,6 +40,7 @@ class LoginFragment : Fragment() {
             findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
         }
 
+//        shows a toast if the user has not filled in the the fields
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
@@ -47,16 +50,20 @@ class LoginFragment : Fragment() {
                 return@setOnClickListener
             }
 
+            //If login in successful then it calls the methods to restore from firestore
             auth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener {
                     viewModel.restoreFromFirestore()
                     findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
                 }
+
+//                shows toast for failure
                 .addOnFailureListener {
                     Toast.makeText(requireContext(), "Login failed: ${it.message}", Toast.LENGTH_LONG).show()
                 }
         }
 
+//        Link to register fragment
         binding.tvRegister.setOnClickListener {
             findNavController().navigate(R.id.action_loginFragment_to_registerFragment)
         }

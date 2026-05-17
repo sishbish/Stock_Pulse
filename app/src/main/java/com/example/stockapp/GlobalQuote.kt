@@ -2,6 +2,7 @@ package com.example.stockapp
 
 import com.google.gson.annotations.SerializedName
 
+//Converting the JSON response from the Alpha Vantage API into an object using Gson
 data class GlobalQuote(
     @SerializedName("01. symbol") val symbol: String,
     @SerializedName("05. price") val price: String,

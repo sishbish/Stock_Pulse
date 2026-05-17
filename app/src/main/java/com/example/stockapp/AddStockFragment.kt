@@ -11,6 +11,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.stockapp.databinding.FragmentAddStockBinding
 
+//screen for adding stocks to watchlist
 class AddStockFragment : Fragment() {
 
     private var _binding: FragmentAddStockBinding? = null
@@ -34,11 +35,13 @@ class AddStockFragment : Fragment() {
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
 
+//        backward navigation in the toolbar
         binding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
         binding.toolbar.setNavigationOnClickListener {
             findNavController().navigateUp()
         }
 
+//        text field
         binding.editText.setOnEditorActionListener { _, _, _ ->
             val ticker = binding.editText.text.toString().uppercase().trim()
             if (ticker.isNotEmpty()) {
