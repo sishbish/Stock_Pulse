@@ -25,7 +25,7 @@ object OpenRouterClient {
      */
     suspend fun getAiAnalysis(prompt: String): String {
         // Build the authorization headers securely following cloud integration patterns
-        val authHeader = "Bearer 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"
+        val authHeader = ""
 
         // Wrap your JSON structural mapping using structured request payloads safely
         val requestBody = createJsonPayload(prompt)
