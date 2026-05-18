@@ -21,15 +21,41 @@ class StockRepository(private val dao: StockDao) {
                 return null
             }
 
+            // Try parsing from the Global Quote response first
+            var openPrice = quote.open.toDoubleOrNull() ?: 0.0
+            var highPrice = quote.high.toDoubleOrNull() ?: 0.0
+            var lowPrice = quote.low.toDoubleOrNull() ?: 0.0
+
+            // If values are 0.0, the market likely isn't open yet today or its a weekend
+            // Fetch the historical daily endpoint to get the most recent completed market session.
+            if (openPrice == 0.0 || highPrice == 0.0 || lowPrice == 0.0) {
+                try {
+                    val dailyResponse = RetrofitClient.api.getDaily(symbol = ticker)
+
+                    // Sort the map keys (dates) chronologically and pick the last one (most recent date)
+                    val latestEntry = dailyResponse.timeSeries?.entries?.sortedBy { it.key }?.lastOrNull()
+
+                    if (latestEntry != null) {
+                        val dailyData = latestEntry.value
+                        openPrice = dailyData.open.toDoubleOrNull() ?: openPrice
+                        highPrice = dailyData.high.toDoubleOrNull() ?: highPrice
+                        lowPrice = dailyData.low.toDoubleOrNull() ?: lowPrice
+                        android.util.Log.d("StockRepository", "Fallback successful! Used daily statistics from: ${latestEntry.key}")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("StockRepository", "Failed to retrieve historical daily fallback: ${e.message}")
+                }
+            }
+
             val entity = StockEntity(
                 ticker = quote.symbol,
                 companyName = ticker,
                 lastPrice = quote.price.toDouble(),
                 changePercent = quote.changePercent,
-                open = quote.open.toDoubleOrNull() ?: 0.0,
-                high = quote.high.toDoubleOrNull() ?: 0.0,
-                low = quote.low.toDoubleOrNull() ?: 0.0,
-                volume = quote.volume,
+                open = openPrice,
+                high = highPrice,
+                low = lowPrice,
+                volume = quote.volume
             )
             dao.insertStock(entity)
             return entity

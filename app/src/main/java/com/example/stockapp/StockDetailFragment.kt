@@ -64,9 +64,16 @@ class StockDetailFragment : Fragment() {
                 binding.tvVolumeValue.text = it.volume
 
                 // price range bar
-                val low = it.lastPrice * 0.98
-                val high = it.lastPrice * 1.02
-                val progress = (((it.lastPrice - low) / (high - low)) * 100).toInt()
+                val low = it.low
+                val high = it.high
+                val currentPrice = it.lastPrice
+
+                val progress = if (high - low > 0) {
+                    (((currentPrice - low) / (high - low)) * 100).toInt()
+                } else {
+                    // Default progress to 0 if data isn't fully loaded or identical
+                    0
+                }
                 binding.priceRangeBar.progress = progress
                 binding.tvRangeLow.text = "$${"%.2f".format(low)}"
                 binding.tvRangeHigh.text = "$${"%.2f".format(high)}"

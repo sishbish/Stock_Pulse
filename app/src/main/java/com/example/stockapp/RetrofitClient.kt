@@ -8,6 +8,10 @@ import retrofit2.converter.gson.GsonConverterFactory
 //object that constructs the Retrofit instance for Alpha Vantage
 //HttpLoggingInterceptor used for debugging
 object RetrofitClient {
+
+
+    const val API_KEY = "02KFR9519B077IYX"
+
     val api: AlphaVantageApi by lazy {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY

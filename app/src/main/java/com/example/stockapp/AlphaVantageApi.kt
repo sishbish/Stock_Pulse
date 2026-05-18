@@ -11,7 +11,7 @@ interface AlphaVantageApi {
     suspend fun getQuote(
         @Query("function") function: String = "GLOBAL_QUOTE",
         @Query("symbol") symbol: String,
-        @Query("apikey") apiKey: String = "API_KEY"
+        @Query("apikey") apiKey: String = RetrofitClient.API_KEY
     ): GlobalQuoteResponse
 
 //    uses the TIME_SERIES_INTRADAY function with a 5 min interval between data points
@@ -20,7 +20,7 @@ interface AlphaVantageApi {
         @Query("function") function: String = "TIME_SERIES_INTRADAY",
         @Query("symbol") symbol: String,
         @Query("interval") interval: String = "5min",
-        @Query("apikey") apiKey: String = "API_KEY"
+        @Query("apikey") apiKey: String = RetrofitClient.API_KEY
     ): IntradayResponse
 
 //    uses the TIME_SERIES_DAILY function
@@ -28,6 +28,6 @@ interface AlphaVantageApi {
     suspend fun getDaily(
         @Query("function") function: String = "TIME_SERIES_DAILY",
         @Query("symbol") symbol: String,
-        @Query("apikey") apiKey: String = "API_KEY"
+        @Query("apikey") apiKey: String = RetrofitClient.API_KEY
     ): DailyResponse
 }
