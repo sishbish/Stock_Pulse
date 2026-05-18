@@ -1,93 +1,165 @@
 package com.example.stockapp
 
+// 3RD-PARTY LIBRARIES USED:
+// 1. Jetpack Compose (androidx.compose.*) - Used for declarative UI layouts, scroll optimization, and theme definitions.
+// 2. Jetpack Compose Runtime LiveData (observeAsState) - Converts Room LiveData models into reactive Compose states.
+// 3. Google Firebase Auth (FirebaseAuth) - Handles remote sign-out workflows on logout actions.
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.stockapp.databinding.FragmentDashboardBinding
 import com.google.firebase.auth.FirebaseAuth
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.RecyclerView
 
-//main screen. Sets up recycler view with StockAdapter
 class DashboardFragment : Fragment() {
 
-    private var _binding: FragmentDashboardBinding? = null
-    private val binding get() = _binding!!
-
     private val viewModel: StockViewModel by viewModels()
-
-    private lateinit var adapter: StockAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-//        clicking a stock navigates to StockDetailFragment with ticker as an argument
-        adapter = StockAdapter { stock ->
-            val bundle = Bundle().apply { putString("ticker", stock.ticker) }
-            findNavController().navigate(R.id.action_dashboardFragment_to_stockDetailFragment, bundle)
-        }
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView.adapter = adapter
-
-        // set up FAB click listener here
-        binding.fab.setOnClickListener {
-            // navigate to AddStockFragment
-            findNavController().navigate(R.id.action_dashboardFragment_to_addStockFragment)
-        }
-
-//        Implements swipe to delete when a stock is swiped
-        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
-            0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
-        ) {
-            override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
-            ): Boolean = false
-
-//            calls the deleteStock method when swiped
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val stock = adapter.stocks[viewHolder.adapterPosition]
-                viewModel.deleteStock(stock)
-            }
-        })
-        itemTouchHelper.attachToRecyclerView(binding.recyclerView)
-
-//        toolbar has a logout that clears local data, signs out of firebase and navigates back to login
-        binding.toolbar.inflateMenu(R.menu.dashboard_menu)
-        binding.toolbar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.action_logout -> {
-                    viewModel.clearLocalData()
-                    FirebaseAuth.getInstance().signOut()
-                    findNavController().navigate(R.id.action_dashboardFragment_to_loginFragment)
+        // ComposeView acts as the platform window layout bridge inside standard fragments
+        return ComposeView(requireContext()).apply {
+            setContent {
+                MaterialTheme {
+                    DashboardScreen(
+                        viewModel = viewModel,
+                        onStockClick = { stock ->
+                            // Safe args configuration mapping to your existing Navigation graph directions
+                            val bundle = Bundle().apply { putString("ticker", stock.ticker) }
+                            findNavController().navigate(R.id.action_dashboardFragment_to_stockDetailFragment, bundle)
+                        },
+                        onFabClick = {
+                            findNavController().navigate(R.id.action_dashboardFragment_to_addStockFragment)
+                        },
+                        onLogoutClick = {
+                            viewModel.clearLocalData()
+                            FirebaseAuth.getInstance().signOut()
+                            findNavController().navigate(R.id.action_dashboardFragment_to_loginFragment)
+                        }
+                    )
                 }
             }
-            true
-        }
-
-//        observes watchlist to keep list up to date
-        viewModel.watchlist.observe(viewLifecycleOwner) { stocks ->
-            adapter.stocks = stocks
-            adapter.notifyDataSetChanged()
         }
     }
+}
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DashboardScreen(
+    viewModel: StockViewModel,
+    onStockClick: (StockEntity) -> Unit,
+    onFabClick: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
+    // Converts your Room DB LiveData collection into a reactive Compose State
+    val watchlist by viewModel.watchlist.observeAsState(initial = emptyList())
+
+    // Scaffold provides native structural anchors for TopBars, Content areas, and FAB placement
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Stock Pulse Watchlist") },
+                actions = {
+                    IconButton(onClick = onLogoutClick) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Logout App"
+                        )
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onFabClick) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Tracked Stock")
+            }
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            if (watchlist.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No stocks added yet. Tap + to add.", color = Color.Gray)
+                }
+            } else {
+                // High-performance scroll system replacing the traditional RecyclerView
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    items(
+                        items = watchlist,
+                        key = { it.ticker } // Key helps Compose keep smooth track of items when changed
+                    ) { stock ->
+
+                        // SwipeToDismissBox implements the gesture functionality directly
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { dismissValue ->
+                                if (dismissValue == SwipeToDismissBoxValue.StartToEnd ||
+                                    dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                    viewModel.deleteStock(stock)
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                        )
+
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {
+                                val color by animateColorAsState(
+                                    when (dismissState.targetValue) {
+                                        SwipeToDismissBoxValue.Settled -> Color.Transparent
+                                        else -> Color.Red
+                                    }, label = "DeleteBackground"
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(color)
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = Alignment.CenterEnd
+                                ) {
+                                    if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
+                                        Text("Delete", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                                    }
+                                }
+                            },
+                            content = {
+                                // Calls your newly written custom stock row card layout
+                                StockItemRow(stock = stock, onItemClick = onStockClick)
+                            }
+                        )
+                    }
+                }
+            }
+        }
     }
 }

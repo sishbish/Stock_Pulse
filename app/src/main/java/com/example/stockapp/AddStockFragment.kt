@@ -4,59 +4,42 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.widget.addTextChangedListener
+import android.widget.Toast
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.stockapp.databinding.FragmentAddStockBinding
+import kotlinx.coroutines.launch
 
-//screen for adding stocks to watchlist
 class AddStockFragment : Fragment() {
 
-    private var _binding: FragmentAddStockBinding? = null
-    private val binding get() = _binding!!
-
     private val viewModel: StockViewModel by viewModels()
-
-    private lateinit var adapter: StockAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentAddStockBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        adapter = StockAdapter { }
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView.adapter = adapter
-
-//        backward navigation in the toolbar
-        binding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-        binding.toolbar.setNavigationOnClickListener {
-            findNavController().navigateUp()
-        }
-
-//        text field
-        binding.editText.setOnEditorActionListener { _, _, _ ->
-            val ticker = binding.editText.text.toString().uppercase().trim()
-            if (ticker.isNotEmpty()) {
-                viewModel.addStock(ticker) {
-                    requireActivity().runOnUiThread {
-                        findNavController().navigateUp()
-                    }
+        return ComposeView(requireContext()).apply {
+            setContent {
+                MaterialTheme {
+                    AddStockScreen(
+                        onBackClick = {
+                            findNavController().navigateUp()
+                        },
+                        onAddStockClick = { inputTicker ->
+                            // Launches the network task and supplies an empty callback block to satisfy the onComplete signature
+                            viewModel.addStock(inputTicker) {
+                                requireActivity().runOnUiThread {
+                                    Toast.makeText(requireContext(), "$inputTicker processing complete", Toast.LENGTH_SHORT).show()
+                                    findNavController().navigateUp()
+                                }
+                            }
+                        }
+                    )
                 }
             }
-            true
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

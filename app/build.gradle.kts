@@ -6,6 +6,8 @@ plugins {
 //    for firebase
     id("com.google.gms.google-services")
     id("androidx.navigation.safeargs.kotlin")
+
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
 }
 
 android {
@@ -37,8 +39,9 @@ android {
     }
 
     buildFeatures {
-        viewBinding = true
+        compose = true
     }
+
 }
 
 kotlin {
@@ -51,6 +54,22 @@ dependencies {
     // Navigation Component
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+
+    // Jetpack Compose BOM (Bill of Materials) and Core Layout Toolkits
+    implementation(platform("androidx.compose:compose-bom:2024.04.01"))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+
+    // Material Design 3 (Teaches modern styled components like Card, Scaffold, Text)
+    implementation(libs.androidx.material3)
+
+    // Integration with Activities & ViewModels
+    implementation("androidx.activity:activity-compose:1.9.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+
+    // Reactive State Bridge: Converts your Room LiveData seamlessly into reactive Compose States
+    implementation(libs.androidx.runtime.livedata)
 
     // Room db
     implementation(libs.androidx.room.runtime)

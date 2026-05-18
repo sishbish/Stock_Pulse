@@ -4,100 +4,170 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
-import com.example.stockapp.databinding.FragmentAiAnalysisBinding
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.launch
 
-//AI analysis screen. Gives a Bullish or Bearish verdict along with some reasoning
 class AiAnalysisFragment : Fragment() {
 
-    private var _binding: FragmentAiAnalysisBinding? = null
-    private val binding get() = _binding!!
-
+    private val viewModel: StockViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentAiAnalysisBinding.inflate(inflater, container, false)
-        return binding.root
-    }
+        val ticker = arguments?.getString("ticker") ?: ""
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+        return ComposeView(requireContext()).apply {
+            setContent {
+                MaterialTheme {
+                    val watchlist by viewModel.watchlist.observeAsState(initial = emptyList())
+                    val stock = watchlist.find { it.ticker.equals(ticker, ignoreCase = true) }
 
-//        receives ticker through argument
-        val ticker = arguments?.getString("ticker")
-
-//        back navigation in toolbar
-        binding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-        binding.toolbar.setNavigationOnClickListener {
-            findNavController().navigateUp()
-        }
-
-        // hide verdict and summary, show loading
-        binding.tvVerdict.visibility = View.GONE
-        binding.tvSummary.visibility = View.GONE
-        binding.progressBar.visibility = View.VISIBLE
-
-//        LLM prompt for the analysis
-        lifecycleScope.launch {
-            try {
-                val prompt = """
-            Analyze the stock $ticker and provide:
-            1. A one word verdict: either exactly "Bullish" or "Bearish"
-            2. Three bullet points explaining your reasoning
-            
-            Format your response exactly like this:
-            VERDICT: Bullish
-            • First reason
-            • Second reason  
-            • Third reason
-        """.trimIndent()
-
-//                using OpenRouter LLM API
-                val response = OpenRouterClient.api.analyze(
-                    request = OpenRouterRequest(
-                        messages = listOf(OpenRouterMessage(role = "user", content = prompt))
-                    )
-                )
-                val text = response.choices.first().message.content
-                android.util.Log.d("AiAnalysis", "Response: $text")
-                val lines = text.trim().split("\n")
-                val verdict = lines[0].replace("VERDICT: ", "").trim()
-                val summary = lines.drop(1).joinToString("\n")
-
-                binding.progressBar.visibility = View.GONE
-                binding.tvVerdict.visibility = View.VISIBLE
-                binding.tvSummary.visibility = View.VISIBLE
-                binding.tvVerdict.text = verdict
-                binding.tvSummary.text = summary
-                binding.tvVerdict.setTextColor(
-                    if (verdict == "Bullish")
-                        android.graphics.Color.parseColor("#1be600")
-                    else
-                        android.graphics.Color.parseColor("#eb4034")
-                )
-
-//                error handling
-            } catch (e: Exception) {
-                android.util.Log.e("AiAnalysis", "Full error: ${e.javaClass.simpleName} - ${e.message}", e)
-                binding.progressBar.visibility = View.GONE
-                binding.tvSummary.visibility = View.VISIBLE
-                binding.tvSummary.text = when {
-                    e.message?.contains("429") == true -> "Rate limit reached. Please wait a minute and try again."
-                    e.message?.contains("404") == true -> "Model not found. Please check API configuration."
-                    else -> "Failed to load analysis: ${e.message}"
+                    if (stock != null) {
+                        AiAnalysisScreen(
+                            stock = stock,
+                            onBackClick = { findNavController().navigateUp() },
+                            onFetchAnalysis = { targetStock, onResult ->
+                                // Safe async coroutine processing on background threads
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    try {
+                                        // FIX: Invoke fetchAiAnalysis with the explicit parameter mapping your client expects
+                                        val analysisText = OpenRouterClient.fetchAiAnalysis(
+                                            ticker = targetStock.ticker,
+                                            companyName = targetStock.companyName,
+                                            lastPrice = targetStock.lastPrice,
+                                            changePercent = targetStock.changePercent
+                                        )
+                                        onResult(Result.success(analysisText))
+                                    } catch (e: Exception) {
+                                        onResult(Result.failure(e))
+                                    }
+                                }
+                            }
+                        )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Stock not found in database.")
+                        }
+                    }
                 }
             }
         }
-
     }
+}
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AiAnalysisScreen(
+    stock: StockEntity,
+    onBackClick: () -> Unit,
+    onFetchAnalysis: (StockEntity, (Result<String>) -> Unit) -> Unit
+) {
+    var aiSummary by remember { mutableStateOf("Click the button below to generate a market report.") }
+    var aiVerdict by remember { mutableStateOf("PENDING") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("${stock.ticker} AI Insights") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stock.companyName,
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "Market Recommendation", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Conditionally tint our financial recommendation text labels
+                    val verdictColor = when (aiVerdict) {
+                        "BUY" -> Color(0xFF388E3C)
+                        "SELL" -> Color.Red
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    Text(text = aiVerdict, style = MaterialTheme.typography.headlineSmall, color = verdictColor)
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "Analysis Summary", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator() // Modern replacement for your XML ProgressBar
+                        }
+                    } else {
+                        Text(text = aiSummary, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    isLoading = true
+                    aiSummary = "Consulting AI market models..."
+                    onFetchAnalysis(stock) { result ->
+                        isLoading = false
+                        result.fold(
+                            onSuccess = { rawText ->
+                                aiSummary = rawText
+                                aiVerdict = when {
+                                    rawText.contains("BUY", ignoreCase = true) -> "BUY"
+                                    rawText.contains("SELL", ignoreCase = true) -> "SELL"
+                                    else -> "HOLD"
+                                }
+                            },
+                            onFailure = { error ->
+                                aiSummary = "Error fetching analysis: ${error.localizedMessage}"
+                                aiVerdict = "ERROR"
+                            }
+                        )
+                    }
+                },
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Generate AI Report")
+            }
+        }
     }
 }

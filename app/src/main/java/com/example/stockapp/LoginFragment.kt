@@ -1,76 +1,52 @@
 package com.example.stockapp
 
+// 3RD-PARTY LIBRARIES USED:
+// 1. Jetpack Compose UI (ComposeView) - Bridges the composable layout tree inside your legacy fragment.
+// 2. Google Firebase Auth (FirebaseAuth) - Verifies user credentials on the cloud.
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
-import com.example.stockapp.databinding.FragmentLoginBinding
 import com.google.firebase.auth.FirebaseAuth
-
-//Handles firebase email/password login. Checks if a user is signed in and skips to the dashboard if they are
 
 class LoginFragment : Fragment() {
 
-    private var _binding: FragmentLoginBinding? = null
-    private val binding get() = _binding!!
-
-    private lateinit var auth: FirebaseAuth
-
-    private val viewModel: StockViewModel by activityViewModels()
+    private val auth = FirebaseAuth.getInstance()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentLoginBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        auth = FirebaseAuth.getInstance()
-
-        // If user is already logged in, skip to dashboard
+        // Safe check: If the user session is already valid, skip the login screen entirely
         if (auth.currentUser != null) {
             findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
         }
 
-//        shows a toast if the user has not filled in the the fields
-        binding.btnLogin.setOnClickListener {
-            val email = binding.etEmail.text.toString().trim()
-            val password = binding.etPassword.text.toString().trim()
-
-            if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(requireContext(), "Please fill in all fields", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+        return ComposeView(requireContext()).apply {
+            setContent {
+                MaterialTheme {
+                    LoginScreen(
+                        onLoginClick = { email, password ->
+                            auth.signInWithEmailAndPassword(email, password)
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+                                        findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
+                                    } else {
+                                        Toast.makeText(requireContext(), "Auth Failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                        },
+                        onRegisterNavigate = {
+                            findNavController().navigate(R.id.action_loginFragment_to_registerFragment)
+                        }
+                    )
+                }
             }
-
-            //If login in successful then it calls the methods to restore from firestore
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnSuccessListener {
-                    viewModel.restoreFromFirestore()
-                    findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
-                }
-
-//                shows toast for failure
-                .addOnFailureListener {
-                    Toast.makeText(requireContext(), "Login failed: ${it.message}", Toast.LENGTH_LONG).show()
-                }
         }
-
-//        Link to register fragment
-        binding.tvRegister.setOnClickListener {
-            findNavController().navigate(R.id.action_loginFragment_to_registerFragment)
-        }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }
