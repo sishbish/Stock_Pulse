@@ -36,6 +36,10 @@ interface StockDao {
     @Query("SELECT * FROM watchlist")
     suspend fun getAllStocksSync(): List<StockEntity>
 
+//contentProvider requires this for instrumented tests
+    @Query("SELECT * FROM watchlist")
+    fun getAllStocksCursor(): android.database.Cursor
+
 //    updates the target price for a ticker
     @Query("UPDATE watchlist SET targetPrice = :targetPrice WHERE ticker = :ticker")
     suspend fun setTargetPrice(ticker: String, targetPrice: Double)

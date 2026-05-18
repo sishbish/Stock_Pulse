@@ -2,6 +2,8 @@ package com.example.stockapp
 import retrofit2.http.GET
 import retrofit2.http.Query
 
+// 3RD-PARTY LIBRARIES USED:
+// 1. Square Retrofit2 (retrofit2.http.GET, retrofit2.http.Query) - Endpoint annotations to define REST API structures.
 
 //Uses retrofit to call the Alpha Vantage API
 interface AlphaVantageApi {

@@ -29,7 +29,9 @@
         <provider
             android:name=".StockProvider"
             android:authorities="com.example.stockapp.provider"
-            android:exported="false"/>
+            android:exported="true"
+            android:readPermission="com.example.stockapp.READ_STOCKS"
+            android:writePermission="com.example.stockapp.WRITE_STOCKS" />
     </application>
 
 </manifest>

@@ -5,6 +5,11 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 
+// 3RD-PARTY LIBRARIES USED:
+// 1. Google Firebase Auth (com.google.firebase.auth.auth) - Used for user registration and session management.
+// 2. Google Firebase Firestore (com.google.firebase.firestore.firestore) - Used for cloud watch-list backup syncing.
+// 3. Kotlinx Coroutines Play Services (kotlinx.coroutines.tasks.await) - Used to bridge Firebase Tasks with Kotlin Suspend Coroutines.
+
 class StockRepository(private val dao: StockDao) {
 
     val watchlist: LiveData<List<StockEntity>> = dao.getAllStocks()
