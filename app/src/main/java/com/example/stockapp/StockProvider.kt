@@ -6,6 +6,7 @@ import android.database.MatrixCursor
 import android.net.Uri
 import kotlinx.coroutines.runBlocking
 
+//content provider that exposes the watchlist to other apps
 class StockProvider : ContentProvider() {
 
     companion object {
@@ -26,6 +27,7 @@ class StockProvider : ContentProvider() {
         return true
     }
 
+//    Uses query using runBlocking to call the Dao
     override fun query(
         uri: Uri,
         projection: Array<out String>?,
@@ -41,6 +43,7 @@ class StockProvider : ContentProvider() {
         return cursor
     }
 
+//    builds a stockEntity object from ContentValues
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
         values ?: return null
         val stock = StockEntity(
@@ -54,6 +57,7 @@ class StockProvider : ContentProvider() {
         return ContentUris.withAppendedId(CONTENT_URI, stock.ticker.hashCode().toLong())
     }
 
+//    returns 0
     override fun update(
         uri: Uri,
         values: ContentValues?,
@@ -61,6 +65,7 @@ class StockProvider : ContentProvider() {
         selectionArgs: Array<out String>?
     ): Int = 0
 
+//    either wipes all stocks or deletes a specific ticker
     override fun delete(
         uri: Uri,
         selection: String?,

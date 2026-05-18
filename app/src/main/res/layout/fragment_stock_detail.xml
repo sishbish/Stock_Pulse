@@ -136,8 +136,6 @@
             <TableRow android:padding="8dp">
                 <TextView android:text="High" android:textColor="#AAAAAA" android:textSize="12sp" android:paddingEnd="16dp"/>
                 <TextView android:id="@+id/tvHighValue" android:text="$180.00" android:textColor="#FFFFFF" android:textSize="12sp" android:paddingEnd="32dp"/>
-                <TextView android:text="Mkt Cap" android:textColor="#AAAAAA" android:textSize="12sp" android:paddingEnd="16dp"/>
-                <TextView android:id="@+id/tvMarketCapValue" android:text="N/A" android:textColor="#FFFFFF" android:textSize="12sp"/>
             </TableRow>
 
             <TableRow android:padding="8dp">

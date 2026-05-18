@@ -15,6 +15,7 @@ import androidx.work.WorkManager
 import com.example.stockapp.databinding.FragmentStockDetailBinding
 import kotlinx.coroutines.launch
 
+// a more detailed page on individual stocks
 class StockDetailFragment : Fragment() {
 
     private var _binding: FragmentStockDetailBinding? = null
@@ -30,6 +31,7 @@ class StockDetailFragment : Fragment() {
         return binding.root
     }
 
+//    loads a price graph for the chosen timespan (1 day, 1 month, 1 year)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -37,6 +39,7 @@ class StockDetailFragment : Fragment() {
 
         ticker?.let { loadChart(it, "1D") }
 
+//    timespan selection
         binding.btn1D.setOnClickListener {
             ticker?.let { loadChart(it, "1D") }
         }
@@ -47,6 +50,7 @@ class StockDetailFragment : Fragment() {
             ticker?.let { loadChart(it, "1Y") }
         }
 
+//    observes the watchlist LiveData to display metrics
         viewModel.watchlist.observe(viewLifecycleOwner) { stocks ->
             val stock = stocks.find { it.ticker == ticker }
             stock?.let {
@@ -54,11 +58,10 @@ class StockDetailFragment : Fragment() {
                 binding.tvTicker.text = it.ticker
                 binding.tvPrice.text = "$${it.lastPrice}"
                 binding.tvChangePercent.text = it.changePercent
-                binding.tvOpenValue.text = "$${it.lastPrice}"
-                binding.tvHighValue.text = "$${it.lastPrice}"
-                binding.tvLowValue.text = "$${it.lastPrice}"
-                binding.tvVolumeValue.text = "N/A"
-                binding.tvMarketCapValue.text = "N/A"
+                binding.tvOpenValue.text = "$${it.open}"
+                binding.tvHighValue.text = "$${it.high}"
+                binding.tvLowValue.text = "$${it.low}"
+                binding.tvVolumeValue.text = it.volume
 
                 // price range bar
                 val low = it.lastPrice * 0.98
@@ -70,22 +73,26 @@ class StockDetailFragment : Fragment() {
             }
         }
 
+//    back navigation on toolbar
         binding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
         binding.toolbar.setNavigationOnClickListener {
             findNavController().navigateUp()
         }
 
+//    intent to take user to yahoo finance page for current stock
         binding.btnReadNews.setOnClickListener {
             val url = "https://finance.yahoo.com/quote/${ticker}"
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             startActivity(intent)
         }
 
+//    navigation to AI analysis page
         binding.btnAiAnalysis.setOnClickListener {
             val bundle = Bundle().apply { putString("ticker", ticker) }
             findNavController().navigate(R.id.action_stockDetailFragment_to_aiAnalysisFragment, bundle)
         }
 
+//    Share function that allows user to share the current price
         binding.toolbar.inflateMenu(R.menu.stock_detail_menu)
         binding.toolbar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -100,6 +107,7 @@ class StockDetailFragment : Fragment() {
             true
         }
 
+//    Set alert button reads target price input and schedules the WorkManager alerts
         binding.btnSetAlert.setOnClickListener {
             val targetPriceText = binding.etTargetPrice.text.toString().trim()
             if (targetPriceText.isNotEmpty()) {
@@ -118,6 +126,7 @@ class StockDetailFragment : Fragment() {
 
     }
 
+//    Dummy data for testing
 //    private fun loadChart(ticker: String, period: String) {
 //        lifecycleScope.launch {
 //            // Temporary mock data - remove when API limit resets
@@ -127,6 +136,7 @@ class StockDetailFragment : Fragment() {
 //                com.github.mikephil.charting.data.Entry(index.toFloat(), price)
 //            }
 
+//    Price graph
     private fun loadChart(ticker: String, period: String) {
         lifecycleScope.launch {
             val prices = viewModel.getChartData(ticker, period)

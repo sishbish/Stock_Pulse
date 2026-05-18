@@ -15,7 +15,11 @@ data class StockEntity(
     val lastPrice: Double,
     val lastUpdated: Long = System.currentTimeMillis(),
     val changePercent: String = "0.00%",
-    val targetPrice: Double? = null
+    val targetPrice: Double? = null,
+    val open: Double = 0.0,
+    val high: Double = 0.0,
+    val low: Double = 0.0,
+    val volume: String = "N/A",
 )
 
 

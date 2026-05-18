@@ -6,7 +6,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+// recyclerView adapter
 class StockAdapter(private val onClick: (StockEntity) -> Unit) : RecyclerView.Adapter<StockAdapter.ViewHolder>() {
+
+//    Stock list
     var stocks: List<StockEntity> = emptyList()
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvTicker = view.findViewById<TextView>(R.id.tvTicker)
@@ -21,6 +24,7 @@ class StockAdapter(private val onClick: (StockEntity) -> Unit) : RecyclerView.Ad
         return ViewHolder(view)
     }
 
+//    displays ticker, company name, price and change percent
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.tvTicker.text = stocks[position].ticker
         holder.tvCompanyName.text = stocks[position].companyName
@@ -28,6 +32,7 @@ class StockAdapter(private val onClick: (StockEntity) -> Unit) : RecyclerView.Ad
         val change = stocks[position].changePercent
         holder.tvChangePercent.text = change
         holder.tvChangePercent.setTextColor(
+//            change percent is red if negative and green otherwise
             if (change.startsWith("-"))
                 android.graphics.Color.parseColor("#FF4444")  // red
             else

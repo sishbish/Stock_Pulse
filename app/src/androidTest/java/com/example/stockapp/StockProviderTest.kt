@@ -8,6 +8,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+//instrumented tests that tests the content provider
 @RunWith(AndroidJUnit4::class)
 class StockProviderTest {
 
@@ -20,6 +21,7 @@ class StockProviderTest {
         contentResolver.delete(StockProvider.CONTENT_URI, null, null)
     }
 
+//    inserts a row and checks the returned URI
     @Test
     fun testInsert() {
         val values = ContentValues().apply {
@@ -32,6 +34,7 @@ class StockProviderTest {
         assertNotNull("Insert should return a URI", uri)
     }
 
+//    checks the inserted row appears in the cursor
     @Test
     fun testQuery() {
         val values = ContentValues().apply {
@@ -61,6 +64,7 @@ class StockProviderTest {
         assertTrue("AAPL should be in the cursor", found)
     }
 
+//    checks a row can be removed by ticker
     @Test
     fun testDelete() {
         // insert a stock first

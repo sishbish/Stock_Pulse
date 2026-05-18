@@ -25,7 +25,11 @@ class StockRepository(private val dao: StockDao) {
                 ticker = quote.symbol,
                 companyName = ticker,
                 lastPrice = quote.price.toDouble(),
-                changePercent = quote.changePercent ?: "0.00%"
+                changePercent = quote.changePercent,
+                open = quote.open.toDoubleOrNull() ?: 0.0,
+                high = quote.high.toDoubleOrNull() ?: 0.0,
+                low = quote.low.toDoubleOrNull() ?: 0.0,
+                volume = quote.volume,
             )
             dao.insertStock(entity)
             return entity

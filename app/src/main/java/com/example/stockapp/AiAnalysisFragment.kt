@@ -10,6 +10,7 @@ import com.example.stockapp.databinding.FragmentAiAnalysisBinding
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
+//AI analysis screen. Gives a Bullish or Bearish verdict along with some reasoning
 class AiAnalysisFragment : Fragment() {
 
     private var _binding: FragmentAiAnalysisBinding? = null
@@ -27,8 +28,10 @@ class AiAnalysisFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+//        receives ticker through argument
         val ticker = arguments?.getString("ticker")
 
+//        back navigation in toolbar
         binding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
         binding.toolbar.setNavigationOnClickListener {
             findNavController().navigateUp()
@@ -39,6 +42,7 @@ class AiAnalysisFragment : Fragment() {
         binding.tvSummary.visibility = View.GONE
         binding.progressBar.visibility = View.VISIBLE
 
+//        LLM prompt for the analysis
         lifecycleScope.launch {
             try {
                 val prompt = """
@@ -53,6 +57,7 @@ class AiAnalysisFragment : Fragment() {
             • Third reason
         """.trimIndent()
 
+//                using OpenRouter LLM API
                 val response = OpenRouterClient.api.analyze(
                     request = OpenRouterRequest(
                         messages = listOf(OpenRouterMessage(role = "user", content = prompt))
@@ -76,6 +81,7 @@ class AiAnalysisFragment : Fragment() {
                         android.graphics.Color.parseColor("#eb4034")
                 )
 
+//                error handling
             } catch (e: Exception) {
                 android.util.Log.e("AiAnalysis", "Full error: ${e.javaClass.simpleName} - ${e.message}", e)
                 binding.progressBar.visibility = View.GONE
