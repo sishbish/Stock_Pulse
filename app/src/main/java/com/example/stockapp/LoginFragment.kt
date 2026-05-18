@@ -1,44 +1,46 @@
 package com.example.stockapp
 
-// 3RD-PARTY LIBRARIES USED:
-// 1. Jetpack Compose UI (ComposeView) - Bridges the composable layout tree inside your legacy fragment.
-// 2. Google Firebase Auth (FirebaseAuth) - Verifies user credentials on the cloud.
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.auth.FirebaseAuth
 
 class LoginFragment : Fragment() {
 
-    private val auth = FirebaseAuth.getInstance()
+    private lateinit var auth: FirebaseAuth
+    private val viewModel: StockViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Safe check: If the user session is already valid, skip the login screen entirely
+        auth = FirebaseAuth.getInstance()
+
+        // Explicit check: Skip immediately to dashboard if user session is already validated
         if (auth.currentUser != null) {
             findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
         }
 
         return ComposeView(requireContext()).apply {
+            setBackgroundColor(android.graphics.Color.parseColor("#121212"))
+
             setContent {
-                MaterialTheme {
+                StockPulseTheme {
                     LoginScreen(
                         onLoginClick = { email, password ->
                             auth.signInWithEmailAndPassword(email, password)
-                                .addOnCompleteListener { task ->
-                                    if (task.isSuccessful) {
-                                        findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
-                                    } else {
-                                        Toast.makeText(requireContext(), "Auth Failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
-                                    }
+                                .addOnSuccessListener {
+                                    viewModel.restoreFromFirestore()
+                                    findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
+                                }
+                                .addOnFailureListener {
+                                    Toast.makeText(requireContext(), "Login failed: ${it.message}", Toast.LENGTH_LONG).show()
                                 }
                         },
                         onRegisterNavigate = {

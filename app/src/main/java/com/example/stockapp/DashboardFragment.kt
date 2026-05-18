@@ -40,7 +40,7 @@ class DashboardFragment : Fragment() {
         // ComposeView acts as the platform window layout bridge inside standard fragments
         return ComposeView(requireContext()).apply {
             setContent {
-                MaterialTheme {
+                StockPulseTheme {
                     DashboardScreen(
                         viewModel = viewModel,
                         onStockClick = { stock ->

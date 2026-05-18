@@ -9,9 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import kotlinx.coroutines.launch
 
 class AddStockFragment : Fragment() {
 
@@ -22,14 +20,17 @@ class AddStockFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         return ComposeView(requireContext()).apply {
+            // Force legacy container to match your black theme background layout color
+            setBackgroundColor(android.graphics.Color.parseColor("#121212"))
+
             setContent {
-                MaterialTheme {
+                StockPulseTheme {
                     AddStockScreen(
                         onBackClick = {
                             findNavController().navigateUp()
                         },
                         onAddStockClick = { inputTicker ->
-                            // Launches the network task and supplies an empty callback block to satisfy the onComplete signature
+                            // Calls the exact addStock signature with trailing lambda block from your branch
                             viewModel.addStock(inputTicker) {
                                 requireActivity().runOnUiThread {
                                     Toast.makeText(requireContext(), "$inputTicker processing complete", Toast.LENGTH_SHORT).show()
