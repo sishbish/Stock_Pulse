@@ -9,8 +9,8 @@ class StockRepository(private val dao: StockDao) {
 
     val watchlist: LiveData<List<StockEntity>> = dao.getAllStocks()
 
-//    calls the Alpha Vantage API to get a quote then creates a StockEntity object which is saved to the
-//    room db and returns it
+    // Calls the Alpha Vantage API to get a quote, falls back onto daily metrics if closed,
+    // then creates a StockEntity object saved to the room db
     suspend fun addStock(ticker: String): StockEntity? {
         try {
             val response = RetrofitClient.api.getQuote(symbol = ticker)
@@ -21,18 +21,19 @@ class StockRepository(private val dao: StockDao) {
                 return null
             }
 
-            // Try parsing from the Global Quote response first
+            //Safe parsing from the Global Quote response first
             var openPrice = quote.open.toDoubleOrNull() ?: 0.0
             var highPrice = quote.high.toDoubleOrNull() ?: 0.0
             var lowPrice = quote.low.toDoubleOrNull() ?: 0.0
+            var calculatedChangePercent = quote.changePercent
 
-            // If values are 0.0, the market likely isn't open yet today or its a weekend
-            // Fetch the historical daily endpoint to get the most recent completed market session.
+            //If values are 0.0, the market likely isn't open yet today.
+            // Fetch the historical daily endpoint to extract statistics from the last valid session.
             if (openPrice == 0.0 || highPrice == 0.0 || lowPrice == 0.0) {
                 try {
                     val dailyResponse = RetrofitClient.api.getDaily(symbol = ticker)
 
-                    // Sort the map keys (dates) chronologically and pick the last one (most recent date)
+                    // Sort and pull the last active session's entry
                     val latestEntry = dailyResponse.timeSeries?.entries?.sortedBy { it.key }?.lastOrNull()
 
                     if (latestEntry != null) {
@@ -40,22 +41,30 @@ class StockRepository(private val dao: StockDao) {
                         openPrice = dailyData.open.toDoubleOrNull() ?: openPrice
                         highPrice = dailyData.high.toDoubleOrNull() ?: highPrice
                         lowPrice = dailyData.low.toDoubleOrNull() ?: lowPrice
-                        android.util.Log.d("StockRepository", "Fallback successful! Used daily statistics from: ${latestEntry.key}")
+
+                        // compute the daily fallback change percent if needed
+                        val closePrice = dailyData.close.toDoubleOrNull() ?: 0.0
+                        if (openPrice > 0.0) {
+                            val rawPercentage = ((closePrice - openPrice) / openPrice) * 100
+                            calculatedChangePercent = String.format(java.util.Locale.US, "%.2f%%", rawPercentage)
+                        }
+                        android.util.Log.d("StockRepository", "Fallback successful! Loaded daily info from: ${latestEntry.key}")
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("StockRepository", "Failed to retrieve historical daily fallback: ${e.message}")
                 }
             }
 
+
             val entity = StockEntity(
                 ticker = quote.symbol,
                 companyName = ticker,
-                lastPrice = quote.price.toDouble(),
-                changePercent = quote.changePercent,
+                lastPrice = quote.price.toDoubleOrNull() ?: 0.0,
+                changePercent = calculatedChangePercent,
                 open = openPrice,
                 high = highPrice,
                 low = lowPrice,
-                volume = quote.volume
+                volume = quote.volume ?: "0"
             )
             dao.insertStock(entity)
             return entity
@@ -65,7 +74,7 @@ class StockRepository(private val dao: StockDao) {
         }
     }
 
-//    sync stocks to the users Firestore backup
+    // Sync stocks to the users Firestore backup
     fun backupToFirestore(stock: StockEntity) {
         val db = Firebase.firestore
         val userId = Firebase.auth.currentUser?.uid ?: return
@@ -77,10 +86,15 @@ class StockRepository(private val dao: StockDao) {
                 "ticker" to stock.ticker,
                 "companyName" to stock.companyName,
                 "lastPrice" to stock.lastPrice,
-                "changePercent" to stock.changePercent
+                "changePercent" to stock.changePercent,
+                "open" to stock.open,
+                "high" to stock.high,
+                "low" to stock.low,
+                "volume" to stock.volume
             ))
     }
-//delete stock from users firestore backup
+
+    // Delete stock from users firestore backup
     fun deleteFromFirestore(ticker: String) {
         val db = Firebase.firestore
         val userId = Firebase.auth.currentUser?.uid ?: return
@@ -91,29 +105,35 @@ class StockRepository(private val dao: StockDao) {
             .delete()
     }
 
-//    fetches all firestore docs and inserts them into the room db. This happens after a user
-//    logs in.
+    // Fetches all firestore docs and inserts them into the room db.
     suspend fun restoreFromFirestore() {
         val db = Firebase.firestore
         val userId = Firebase.auth.currentUser?.uid ?: return
-        db.collection("users")
-            .document(userId)
-            .collection("watchlist")
-            .get()
-            .await()
-            .documents.forEach { doc ->
-                val entity = StockEntity(
-                    ticker = doc.getString("ticker") ?: return@forEach,
-                    companyName = doc.getString("companyName") ?: "",
-                    lastPrice = doc.getDouble("lastPrice") ?: 0.0,
-                    changePercent = doc.getString("changePercent") ?: "0.00%"
-                )
-                dao.insertStock(entity)
-            }
+        try {
+            db.collection("users")
+                .document(userId)
+                .collection("watchlist")
+                .get()
+                .await()
+                .documents.forEach { doc ->
+                    val entity = StockEntity(
+                        ticker = doc.getString("ticker") ?: return@forEach,
+                        companyName = doc.getString("companyName") ?: "",
+                        lastPrice = doc.getDouble("lastPrice") ?: 0.0,
+                        changePercent = doc.getString("changePercent") ?: "0.00%",
+                        open = doc.getDouble("open") ?: 0.0,
+                        high = doc.getDouble("high") ?: 0.0,
+                        low = doc.getDouble("low") ?: 0.0,
+                        volume = doc.getString("volume") ?: "0"
+                    )
+                    dao.insertStock(entity)
+                }
+        } catch (e: Exception) {
+            android.util.Log.e("StockRepository", "Error restoring backup: ${e.message}")
+        }
     }
 
-//calls the daily time series endpoint from the API and then seperates it into 1 day, 1 month,
-//1 year periods
+    // Calls the daily time series endpoint from the API and separates it into distinct periods
     suspend fun getChartData(ticker: String, period: String): List<Float> {
         return try {
             val response = RetrofitClient.api.getDaily(symbol = ticker)
@@ -132,7 +152,6 @@ class StockRepository(private val dao: StockDao) {
         }
     }
 
-//    calls the functions from StockDao
     suspend fun clearLocalData() {
         dao.deleteAllStocks()
     }
