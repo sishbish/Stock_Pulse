@@ -44,16 +44,15 @@ class AiAnalysisFragment : Fragment() {
                             stock = stock,
                             onBackClick = { findNavController().navigateUp() },
                             onFetchAnalysis = { targetStock, onResult ->
-                                // Safe async coroutine processing on background threads
+                                // Safe asynchronous coroutine processing context taught in Slide 18 of Module 4
                                 viewLifecycleOwner.lifecycleScope.launch {
                                     try {
-                                        // FIX: Invoke fetchAiAnalysis with the explicit parameter mapping your client expects
-                                        val analysisText = OpenRouterClient.fetchAiAnalysis(
-                                            ticker = targetStock.ticker,
-                                            companyName = targetStock.companyName,
-                                            lastPrice = targetStock.lastPrice,
-                                            changePercent = targetStock.changePercent
-                                        )
+                                        // 1. Build a prompt matching your single string argument parameters
+                                        val prompt = "Analyze the market status of ${targetStock.companyName} (${targetStock.ticker}) currently trading at $${targetStock.lastPrice} (${targetStock.changePercent}). Provide a brief summary and conclude with a clear line containing either 'BUY', 'SELL', or 'HOLD'."
+
+                                        // 2. Invoke getAiAnalysis to match your OpenRouterClient.kt exactly
+                                        val analysisText = OpenRouterClient.getAiAnalysis(prompt)
+
                                         onResult(Result.success(analysisText))
                                     } catch (e: Exception) {
                                         onResult(Result.failure(e))
@@ -114,7 +113,6 @@ fun AiAnalysisScreen(
                     Text(text = "Market Recommendation", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Conditionally tint our financial recommendation text labels
                     val verdictColor = when (aiVerdict) {
                         "BUY" -> Color(0xFF388E3C)
                         "SELL" -> Color.Red
@@ -131,7 +129,7 @@ fun AiAnalysisScreen(
 
                     if (isLoading) {
                         Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator() // Modern replacement for your XML ProgressBar
+                            CircularProgressIndicator()
                         }
                     } else {
                         Text(text = aiSummary, style = MaterialTheme.typography.bodyMedium)
