@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 
 //defines room database (fourth version)
-@Database(entities = [StockEntity::class], version = 4)
+@Database(entities = [StockEntity::class], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun stockDao(): StockDao
 

@@ -35,7 +35,7 @@ class AiAnalysisFragment : Fragment() {
 
         return ComposeView(requireContext()).apply {
             setContent {
-                MaterialTheme {
+                StockPulseTheme {
                     val watchlist by viewModel.watchlist.observeAsState(initial = emptyList())
                     val stock = watchlist.find { it.ticker.equals(ticker, ignoreCase = true) }
 

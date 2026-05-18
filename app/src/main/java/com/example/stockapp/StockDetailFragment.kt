@@ -31,8 +31,7 @@ class StockDetailFragment : Fragment() {
 
         return ComposeView(requireContext()).apply {
             setContent {
-                MaterialTheme {
-                    // Observe the watchlist stream and filter for the targeted ticker
+                StockPulseTheme {
                     val watchlist by viewModel.watchlist.observeAsState(initial = emptyList())
                     val stockEntity = watchlist.find { it.ticker.equals(ticker, ignoreCase = true) }
 

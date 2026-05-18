@@ -17,13 +17,18 @@ class StockProvider : ContentProvider() {
 
         val CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY/stocks")
 
+        // CRITICAL FIX: Explicitly expose column constant strings for StockProviderTest.kt
+        const val COL_TICKER = "ticker"
+        const val COL_COMPANY_NAME = "companyName"
+        const val COL_LAST_PRICE = "lastPrice"
+        const val COL_CHANGE_PERCENT = "changePercent"
+
         private val uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(AUTHORITY, "stocks", STOCKS_MATCH_CODE)
         }
     }
 
     override fun onCreate(): Boolean {
-        // Safe context checking inside ContentProvider lifecycle initialization
         val ctx = context ?: return false
         database = AppDatabase.getDatabase(ctx)
         dao = database.stockDao()
@@ -39,7 +44,6 @@ class StockProvider : ContentProvider() {
     ): Cursor? {
         return when (uriMatcher.match(uri)) {
             STOCKS_MATCH_CODE -> {
-                // Returns a standard SQLite Cursor from the Room RoomDatabase instance
                 dao.getAllStocksCursor()
             }
             else -> throw IllegalArgumentException("Unknown URI: $uri")
@@ -51,26 +55,37 @@ class StockProvider : ContentProvider() {
             throw IllegalArgumentException("Invalid insertion URI or missing values")
         }
 
-        val ticker = values.getAsString("ticker") ?: return null
+        val ticker = values.getAsString(COL_TICKER) ?: return null
         val entity = StockEntity(
             ticker = ticker,
-            companyName = values.getAsString("companyName") ?: "",
-            lastPrice = values.getAsDouble("lastPrice") ?: 0.0,
-            changePercent = values.getAsString("changePercent") ?: "0.00%",
+            companyName = values.getAsString(COL_COMPANY_NAME) ?: "",
+            lastPrice = values.getAsDouble(COL_LAST_PRICE) ?: 0.0,
+            changePercent = values.getAsString(COL_CHANGE_PERCENT) ?: "0.00%",
             open = values.getAsDouble("open") ?: 0.0,
             high = values.getAsDouble("high") ?: 0.0,
             low = values.getAsDouble("low") ?: 0.0,
             volume = values.getAsString("volume") ?: "0"
         )
 
-        // Run insertion in a background thread context or via helper blocks
-        // depending on your Instrumented Test architecture requirements
+        // CRITICAL FIX: Safely insert into the Room database so testQuery can retrieve it
+        dao.insertStockSync(entity)
+
         return Uri.withAppendedPath(CONTENT_URI, ticker)
     }
 
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int {
-        // Implement simple matching clear paths if required by StockProviderTest.kt
-        return 0
+        if (uriMatcher.match(uri) != STOCKS_MATCH_CODE) {
+            throw IllegalArgumentException("Unknown URI: $uri")
+        }
+
+        // CRITICAL FIX: Add simple matching logic using target selection variables requested by tests
+        return if (selectionArgs != null && selectionArgs.isNotEmpty()) {
+            val tickerToDelete = selectionArgs[0]
+            dao.deleteByTickerSync(tickerToDelete)
+        } else {
+            // Bulk delete fallback when selection constraints are null
+            dao.clearAllStocksSync()
+        }
     }
 
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = 0

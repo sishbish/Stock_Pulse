@@ -1,8 +1,5 @@
 package com.example.stockapp
 
-// 3RD-PARTY LIBRARIES USED:
-// 1. Retrofit & Gson - Handles type-safe asynchronous network calls and automated JSON model conversions.
-// 2. OkHttp3 RequestBody - Packages structured body streams to send raw strings safely over network channels.
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
@@ -28,7 +25,7 @@ object OpenRouterClient {
      */
     suspend fun getAiAnalysis(prompt: String): String {
         // Build the authorization headers securely following cloud integration patterns
-        val authHeader = "Bearer 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" // Replace with your key string asset if needed
+        val authHeader = "Bearer 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"
 
         // Wrap your JSON structural mapping using structured request payloads safely
         val requestBody = createJsonPayload(prompt)
