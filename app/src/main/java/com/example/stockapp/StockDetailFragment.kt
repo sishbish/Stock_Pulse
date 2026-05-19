@@ -1,6 +1,7 @@
 package com.example.stockapp
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -42,9 +43,32 @@ class StockDetailFragment : Fragment() {
                             },
 //                            backward navigatioin
                             onBackClick = { findNavController().navigateUp() },
-                            onExternalViewClick = { /* ... */ },
-                            onAiAnalysisClick = { /* ... */ },
-                            onShareClick = { /* ... */ },
+
+                            // launches an outside browser app using an Intent to display a financial news search matching the requirement
+                            onExternalViewClick = {
+                                val queryUrl = "https://uk.finance.yahoo.com/quote/${stockEntity.ticker}/"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(queryUrl))
+                                context.startActivity(intent)
+                            },
+
+                            //uses the navigation component to safely transition over to the AI Analysis screen fragment
+                            onAiAnalysisClick = {
+                                val bundle = Bundle().apply { putString("ticker", stockEntity.ticker) }
+                                findNavController().navigate(R.id.action_stockDetailFragment_to_aiAnalysisFragment, bundle)
+                            },
+
+                            // implements the Android ShareSheet using an implicit intent to let users export text statistics
+                            onShareClick = {
+                                val shareText = "Checking out ${stockEntity.companyName} (${stockEntity.ticker.uppercase()}) on Stock Pulse. Current Price: $${stockEntity.lastPrice}"
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                    type = "text/plain"
+                                }
+                                val shareIntent = Intent.createChooser(sendIntent, null)
+                                context.startActivity(shareIntent)
+                            },
+
                             onConfirmPriceAlert = { targetAlertPrice ->
 //                                saves price alert to room db
                                 viewModel.setTargetPrice(stockEntity.ticker, targetAlertPrice)

@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun StockDetailScreen(
     stock: StockEntity,
-    onFetchChartData: suspend (String) -> List<Float>,
+    onFetchChartData: suspend (String) -> List<Pair<String, Float>>,
     onBackClick: () -> Unit,
     onExternalViewClick: () -> Unit,
     onAiAnalysisClick: () -> Unit,
@@ -48,11 +48,11 @@ fun StockDetailScreen(
 //    price alert value
     var alertPriceInput by remember { mutableStateOf("") }
 
-    // STORES ACTUAL HISTORY: Holds the real list of prices fetched from the web API.
-    var chartPoints by remember { mutableStateOf<List<Float>>(emptyList()) }
+    // holds the real list of prices fetched from the web API.
+    var chartPoints by remember { mutableStateOf<List<Pair<String, Float>>>(emptyList()) }
     var isLoadingChart by remember { mutableStateOf(true) }
 
-    // ASYNC TRIGGER: Automatically runs in the background whenever the user
+    // automatically runs in the background whenever the user
     // opens this page or clicks a different timeframe button ("1D", "1M", "1Y").
     LaunchedEffect(selectedTimeframe) {
         isLoadingChart = true
@@ -190,9 +190,10 @@ fun StockDetailScreen(
             ) {
                 if (isLoadingChart) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                } else if (chartPoints.isNotEmpty() && isChartDataValid) {
+                } else if (chartPoints.isNotEmpty()) {
                     SingleLineStockChart(
-                        points = chartPoints,
+                        points = chartPoints.map { it.second },
+                        dates = chartPoints.map { it.first },
                         isNegative = isNegative
                     )
                 } else {
@@ -423,48 +424,140 @@ fun GridStatRow(label: String, value: String) {
 @Composable
 fun SingleLineStockChart(
     points: List<Float>,
+    dates: List<String>,
     isNegative: Boolean,
     modifier: Modifier = Modifier
 ) {
     val lineBrushColor = if (isNegative) MaterialTheme.colorScheme.error else Color(0xFF388E3C)
+    val axisColor = Color(0xFF888888)
+    val labelColor = Color(0xFFAAAAAA)
 
-    Canvas(
+    // Format a "YYYY-MM-DD" date string down to "MMM DD" (e.g. "Jan 05")
+    fun formatDate(raw: String): String {
+        return try {
+            val parts = raw.split("-")
+            val months = listOf("Jan","Feb","Mar","Apr","May","Jun",
+                "Jul","Aug","Sep","Oct","Nov","Dec")
+            val month = months.getOrElse(parts[1].toInt() - 1) { "" }
+            "$month ${parts[2]}"
+        } catch (e: Exception) { raw }
+    }
+
+    // Build the three X-axis label strings: first, middle, last date
+    val xLabels: List<String> = if (dates.size >= 2) {
+        val first = formatDate(dates.first())
+        val mid   = formatDate(dates[dates.size / 2])
+        val last  = formatDate(dates.last())
+        listOf(first, mid, last)
+    } else emptyList()
+
+    val yAxisWidthDp = 52.dp
+    val xAxisHeightDp = 20.dp
+
+    // Outer row: Y-axis labels on the left, chart canvas on the right
+    Row(
         modifier = modifier
             .fillMaxWidth()
             .height(180.dp)
-            .padding(vertical = 8.dp)
     ) {
+        // --- Y-axis label column ---
         val maxVal = points.maxOrNull() ?: 1f
         val minVal = points.minOrNull() ?: 0f
-        val deltaY = maxVal - minVal
+        val midVal = (maxVal + minVal) / 2f
 
-        val distanceX = size.width / (if (points.size > 1) (points.size - 1) else 1).toFloat()
-        val path = Path()
-        val nodeRadius = 3.dp.toPx()
-
-        points.forEachIndexed { index, value ->
-            val currentX = index * distanceX
-            val normalizedY = if (deltaY > 0f) (value - minVal) / deltaY else 0.5f
-            val currentY = size.height - (normalizedY * size.height)
-
-            if (index == 0) {
-                path.moveTo(currentX, currentY)
-            } else {
-                path.lineTo(currentX, currentY)
+        Column(
+            modifier = Modifier
+                .width(yAxisWidthDp)
+                .fillMaxHeight()
+                .padding(bottom = xAxisHeightDp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            listOf(maxVal, midVal, minVal).forEach { value ->
+                Text(
+                    text = "$${String.format("%.2f", value)}",
+                    color = labelColor,
+                    fontSize = 9.sp,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-
-            drawCircle(
-                color = Color.White,
-                radius = nodeRadius,
-                center = Offset(currentX, currentY)
-            )
         }
 
-        drawPath(
-            path = path,
-            color = lineBrushColor,
-            style = Stroke(width = 2.5.dp.toPx())
-        )
+        // --- Chart area: canvas + X-axis labels ---
+        Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+
+            // Line chart canvas
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(vertical = 4.dp)
+            ) {
+                val deltaY = maxVal - minVal
+                val distanceX = size.width / (if (points.size > 1) (points.size - 1) else 1).toFloat()
+                val path = Path()
+                val nodeRadius = 2.5.dp.toPx()
+
+                // Horizontal gridlines at top, middle, bottom
+                listOf(0f, 0.5f, 1f).forEach { fraction ->
+                    val y = size.height * (1f - fraction)
+                    drawLine(
+                        color = axisColor.copy(alpha = 0.25f),
+                        start = Offset(0f, y),
+                        end = Offset(size.width, y),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+
+                points.forEachIndexed { index, value ->
+                    val currentX = index * distanceX
+                    val normalizedY = if (deltaY > 0f) (value - minVal) / deltaY else 0.5f
+                    val currentY = size.height - (normalizedY * size.height)
+
+                    if (index == 0) path.moveTo(currentX, currentY)
+                    else path.lineTo(currentX, currentY)
+
+                    // Only draw node dots at first and last point to keep it clean
+                    if (index == 0 || index == points.lastIndex) {
+                        drawCircle(
+                            color = Color.White,
+                            radius = nodeRadius,
+                            center = Offset(currentX, currentY)
+                        )
+                    }
+                }
+
+                drawPath(path = path, color = lineBrushColor, style = Stroke(width = 2.5.dp.toPx()))
+
+                // Bottom axis line
+                drawLine(
+                    color = axisColor.copy(alpha = 0.4f),
+                    start = Offset(0f, size.height),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+
+            // X-axis date labels
+            if (xLabels.size == 3) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(xAxisHeightDp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    xLabels.forEach { label ->
+                        Text(
+                            text = label,
+                            color = labelColor,
+                            fontSize = 9.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

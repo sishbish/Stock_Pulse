@@ -72,7 +72,7 @@ class StockViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 //    called from lifecycleScope
-    suspend fun getChartData(ticker: String, period: String): List<Float> {
+    suspend fun getChartData(ticker: String, period: String): List<Pair<String, Float>> {
         return repo.getChartData(ticker, period)
     }
 }

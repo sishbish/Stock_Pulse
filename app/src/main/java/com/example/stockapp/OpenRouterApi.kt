@@ -16,7 +16,7 @@ interface OpenRouterApi {
     ): OpenRouterResponse
 }
 
-// --- Data Models matching the expected JSON response format ---
+// Data Models matching the expected JSON response format
 
 data class OpenRouterResponse(
     val choices: List<Choice>

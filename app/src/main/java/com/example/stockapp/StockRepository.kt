@@ -3,6 +3,7 @@ import androidx.lifecycle.LiveData
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await
 
 // 3RD-PARTY LIBRARIES USED:
@@ -140,22 +141,43 @@ class StockRepository(private val dao: StockDao) {
         }
     }
 
-    // Calls the daily time series endpoint from the API and separates it into distinct periods
-    suspend fun getChartData(ticker: String, period: String): List<Float> {
+    // Calls the daily time series endpoint from the API and separates it into distinct periods.
+    // Returns a list of (date, price) pairs so the chart can display labelled axes.
+    suspend fun getChartData(ticker: String, period: String): List<Pair<String, Float>> {
         return try {
             val response = RetrofitClient.api.getDaily(symbol = ticker)
             val entries = response.timeSeries?.entries
                 ?.sortedBy { it.key } ?: return emptyList()
 
             when (period) {
-                // pulls the last 5 active completed sessions instead of 1
-                // so the single line graph layout has multiple data points to connect.
                 "1D" -> {
-                    val rawPoints = entries.takeLast(5).map { it.value.close.toFloat() }
-                    if (rawPoints.size < 2) emptyList() else rawPoints
+                    return try {
+                        delay(1100L)
+                        val intradayResponse = RetrofitClient.api.getIntraday(symbol = ticker)
+                        val intradayEntries = intradayResponse.timeSeries?.entries
+                            ?.sortedBy { it.key }
+
+                        if (!intradayEntries.isNullOrEmpty()) {
+                            val rawPoints = intradayEntries.takeLast(78)
+                                .map { Pair(it.key, it.value.close.toFloat()) }
+                            if (rawPoints.size >= 2) rawPoints else emptyList()
+                        } else {
+                            android.util.Log.d("StockRepository", "Intraday unavailable, falling back to 1W daily data")
+                            delay(1100L)
+                            val dailyResponse = RetrofitClient.api.getDaily(symbol = ticker)
+                            val dailyEntries = dailyResponse.timeSeries?.entries
+                                ?.sortedBy { it.key } ?: return emptyList()
+                            val rawPoints = dailyEntries.takeLast(7)
+                                .map { Pair(it.key, it.value.close.toFloat()) }
+                            if (rawPoints.size >= 2) rawPoints else emptyList()
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("StockRepository", "1D chart error: ${e.message}")
+                        emptyList()
+                    }
                 }
-                "1M" -> entries.takeLast(30).map { it.value.close.toFloat() }
-                "1Y" -> entries.takeLast(252).map { it.value.close.toFloat() }
+                "1M" -> entries.takeLast(30).map { Pair(it.key, it.value.close.toFloat()) }
+                "1Y" -> entries.takeLast(252).map { Pair(it.key, it.value.close.toFloat()) }
                 else -> emptyList()
             }
         } catch (e: Exception) {
