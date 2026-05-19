@@ -1,9 +1,9 @@
 package com.example.stockapp
 
 // 3RD-PARTY LIBRARIES USED:
-// 1. Jetpack Compose (androidx.compose.*) - Used for declarative UI layouts, scroll optimization, and theme definitions.
-// 2. Jetpack Compose Runtime LiveData (observeAsState) - Converts Room LiveData models into reactive Compose states.
-// 3. Google Firebase Auth (FirebaseAuth) - Handles remote sign-out workflows on logout actions.
+// 1. Jetpack Compose - Used for declarative UI layouts, scroll optimization, and theme definitions.
+// 2. Jetpack Compose Runtime LiveData - Converts Room LiveData models into reactive Compose states.
+// 3. Google Firebase Auth - Handles remote sign-out workflows on logout actions.
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View

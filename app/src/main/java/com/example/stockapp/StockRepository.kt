@@ -7,9 +7,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await
 
 // 3RD-PARTY LIBRARIES USED:
-// 1. Google Firebase Auth (com.google.firebase.auth.auth) - Used for user registration and session management.
-// 2. Google Firebase Firestore (com.google.firebase.firestore.firestore) - Used for cloud watch-list backup syncing.
-// 3. Kotlinx Coroutines Play Services (kotlinx.coroutines.tasks.await) - Used to bridge Firebase Tasks with Kotlin Suspend Coroutines.
+// 1. Google Firebase Auth - Used for user registration and session management.
+// 2. Google Firebase Firestore - Used for cloud watch-list backup syncing.
+// 3. Kotlinx Coroutines Play Services - Used to bridge Firebase Tasks with Kotlin Suspend Coroutines.
 
 class StockRepository(private val dao: StockDao) {
 

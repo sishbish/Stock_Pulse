@@ -1,7 +1,7 @@
 package com.example.stockapp
 
 // 3RD-PARTY LIBRARIES USED:
-// 1. Jetpack Compose (androidx.compose.*) - Handles UI rendering, password masks, and state mutation tracking.
+// 1. Jetpack Compose - Handles UI rendering, password masks, and state mutation tracking.
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*

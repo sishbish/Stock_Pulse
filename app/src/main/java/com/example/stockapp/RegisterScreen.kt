@@ -1,7 +1,7 @@
 package com.example.stockapp
 
 // 3RD-PARTY LIBRARIES USED:
-// 1. Jetpack Compose (androidx.compose.*) - Handles functional layout structure and input validation fields.
+// 1. Jetpack Compose - Handles functional layout structure and input validation fields.
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*

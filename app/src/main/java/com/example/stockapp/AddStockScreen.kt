@@ -1,7 +1,7 @@
 package com.example.stockapp
 
 // 3RD-PARTY LIBRARIES USED:
-// 1. Jetpack Compose (androidx.compose.*) - Handles UI input rendering, state tracking, and layout arrangement.
+// 1. Jetpack Compose - Handles UI input rendering, state tracking, and layout arrangement.
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack

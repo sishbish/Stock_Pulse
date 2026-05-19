@@ -1,7 +1,7 @@
 package com.example.stockapp
 
 // 3RD-PARTY LIBRARIES USED:
-// 1. Retrofit (retrofit2.http.*) - Handles declaration of asynchronous network endpoints.
+// 1. Retrofit - Handles declaration of asynchronous network endpoints.
 // 2. OkHttp3 RequestBody - Accepts raw structured text streams over server channels.
 import okhttp3.RequestBody
 import retrofit2.http.Body
