@@ -12,13 +12,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
+
 @Composable
 fun RegisterScreen(
     onRegisterClick: (String, String) -> Unit,
     onLoginNavigate: () -> Unit
 ) {
+//     Stores the text typed into the email registration input box.
     var email by remember { mutableStateOf("") }
+
+//     Stores the text typed into the password creation input box.
     var password by remember { mutableStateOf("") }
+
+//     Tracks if a warning label should show up due to empty fields or short passwords.
     var showError by remember { mutableStateOf(false) }
 
     Column(
@@ -28,19 +34,23 @@ fun RegisterScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+//         Main sign-up page header title text at the top of the screen.
         Text(text = "Create Account", style = MaterialTheme.typography.headlineLarge)
         Spacer(modifier = Modifier.height(32.dp))
 
+//         Outlined entry text field designed for email input handling.
         OutlinedTextField(
             value = email,
             onValueChange = { email = it; showError = false },
             label = { Text("Email Address") },
+            // Switches the digital keyboard layout to prioritize email symbol keys.
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+//         Outlined entry text field designed for password creation input handling.
         OutlinedTextField(
             value = password,
             onValueChange = { password = it; showError = false },
@@ -50,6 +60,7 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+//          Draws a red warning label if the requirements aren't met.
         if (showError) {
             Text(
                 text = "Please enter valid email and password rules.",
@@ -62,9 +73,9 @@ fun RegisterScreen(
 
         Button(
             onClick = {
+//                 makes sure the email isn't blank and the password is at least 6 characters long.
                 if (email.isBlank() || password.length < 6) {
-                    showError = true
-                } else {
+                    showError = true // Triggers the red error warning visibility state flag.
                     onRegisterClick(email.trim(), password.trim())
                 }
             },

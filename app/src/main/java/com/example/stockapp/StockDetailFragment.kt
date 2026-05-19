@@ -51,13 +51,13 @@ class StockDetailFragment : Fragment() {
                                 context.startActivity(intent)
                             },
 
-                            //uses the navigation component to safely transition over to the AI Analysis screen fragment
+//                            uses the navigation component to safely transition over to the AI Analysis screen fragment
                             onAiAnalysisClick = {
                                 val bundle = Bundle().apply { putString("ticker", stockEntity.ticker) }
                                 findNavController().navigate(R.id.action_stockDetailFragment_to_aiAnalysisFragment, bundle)
                             },
 
-                            // implements the Android ShareSheet using an implicit intent to let users export text statistics
+//                             implements the Android ShareSheet using an implicit intent to let users export text statistics
                             onShareClick = {
                                 val shareText = "Checking out ${stockEntity.companyName} (${stockEntity.ticker.uppercase()}) on Stock Pulse. Current Price: $${stockEntity.lastPrice}"
                                 val sendIntent = Intent().apply {

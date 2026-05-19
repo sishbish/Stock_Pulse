@@ -29,6 +29,7 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.auth.FirebaseAuth
 
+// Fragment for the main dashboard
 class DashboardFragment : Fragment() {
 
     private val viewModel: StockViewModel by viewModels()
@@ -37,21 +38,22 @@ class DashboardFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // ComposeView acts as the platform window layout bridge inside standard fragments
         return ComposeView(requireContext()).apply {
             setContent {
                 StockPulseTheme {
                     DashboardScreen(
                         viewModel = viewModel,
                         onStockClick = { stock ->
-                            // Safe args configuration mapping to your existing Navigation graph directions
+//                             When a user clicks a stock card, save the ticker and move to the details page
                             val bundle = Bundle().apply { putString("ticker", stock.ticker) }
                             findNavController().navigate(R.id.action_dashboardFragment_to_stockDetailFragment, bundle)
                         },
                         onFabClick = {
+//                             Navigates to the add stock page
                             findNavController().navigate(R.id.action_dashboardFragment_to_addStockFragment)
                         },
                         onLogoutClick = {
+//                             Clears room db memory data caching, signs out of Firebase online sessions, and routes back to login
                             viewModel.clearLocalData()
                             FirebaseAuth.getInstance().signOut()
                             findNavController().navigate(R.id.action_dashboardFragment_to_loginFragment)
@@ -63,6 +65,7 @@ class DashboardFragment : Fragment() {
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -71,15 +74,15 @@ fun DashboardScreen(
     onFabClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
-    // Converts your Room DB LiveData collection into a reactive Compose State
+//     Pulls the current watchlist data from storage and automatically refreshes the UI if things change
     val watchlist by viewModel.watchlist.observeAsState(initial = emptyList())
 
-    // Scaffold provides native structural anchors for TopBars, Content areas, and FAB placement
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Stock Pulse Watchlist") },
+                title = { Text("Watchlist") },
                 actions = {
+//                     Placing the logout button icon on the right side of the toolbar header
                     IconButton(onClick = onLogoutClick) {
                         Icon(
                             imageVector = Icons.Default.ExitToApp,
@@ -90,6 +93,7 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
+//             The plus button for adding stocks.
             FloatingActionButton(onClick = onFabClick) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add Tracked Stock")
             }
@@ -100,7 +104,9 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+//             Checking if the user's ticker list database collection is completely empty.
             if (watchlist.isEmpty()) {
+//                 notification text displayed if there are no items to list.
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -108,21 +114,22 @@ fun DashboardScreen(
                     Text("No stocks added yet. Tap + to add.", color = Color.Gray)
                 }
             } else {
-                // High-performance scroll system replacing the traditional RecyclerView
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
                     items(
                         items = watchlist,
-                        key = { it.ticker } // Key helps Compose keep smooth track of items when changed
+                        key = { it.ticker }
                     ) { stock ->
 
-                        // SwipeToDismissBox implements the gesture functionality directly
+//                         SwipeToDismissBox implements the gesture functionality directly
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { dismissValue ->
+//                                 If the row card is swiped all the way left or right, run delete tasks.
                                 if (dismissValue == SwipeToDismissBoxValue.StartToEnd ||
                                     dismissValue == SwipeToDismissBoxValue.EndToStart) {
+//                                     Deletes the row item from the database.
                                     viewModel.deleteStock(stock)
                                     true
                                 } else {
@@ -134,7 +141,8 @@ fun DashboardScreen(
                         SwipeToDismissBox(
                             state = dismissState,
                             backgroundContent = {
-                                val color by animateColorAsState(
+//                                 Handles animating a transition behind the card during user swiping actions.
+                                val shiftingColour by animateColorAsState(
                                     when (dismissState.targetValue) {
                                         SwipeToDismissBoxValue.Settled -> Color.Transparent
                                         else -> Color.Red
@@ -143,17 +151,18 @@ fun DashboardScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(color)
+                                        .background(shiftingColour)
                                         .padding(horizontal = 20.dp),
                                     contentAlignment = Alignment.CenterEnd
                                 ) {
+//                                     Displays a "Delete" label warning when the user pulls card.
                                     if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
                                         Text("Delete", color = Color.White, style = MaterialTheme.typography.titleMedium)
                                     }
                                 }
                             },
                             content = {
-                                // Calls your newly written custom stock row card layout
+//                                 Loads the visual structural card row containing the stock price information.
                                 StockItemRow(stock = stock, onItemClick = onStockClick)
                             }
                         )

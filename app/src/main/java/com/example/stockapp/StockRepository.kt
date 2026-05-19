@@ -15,8 +15,8 @@ class StockRepository(private val dao: StockDao) {
 
     val watchlist: LiveData<List<StockEntity>> = dao.getAllStocks()
 
-    // Calls the Alpha Vantage API to get a quote, falls back onto daily metrics if closed,
-    // then creates a StockEntity object saved to the room db
+//     Calls the Alpha Vantage API to get a quote, falls back onto daily metrics if closed,
+//     then creates a StockEntity object saved to the room db
     suspend fun addStock(ticker: String): StockEntity? {
         try {
             val response = RetrofitClient.api.getQuote(symbol = ticker)
@@ -27,19 +27,19 @@ class StockRepository(private val dao: StockDao) {
                 return null
             }
 
-            //Safe parsing from the Global Quote response first
+//            Safe parsing from the Global Quote response first
             var openPrice = quote.open.toDoubleOrNull() ?: 0.0
             var highPrice = quote.high.toDoubleOrNull() ?: 0.0
             var lowPrice = quote.low.toDoubleOrNull() ?: 0.0
             var calculatedChangePercent = quote.changePercent
 
-            //If values are 0.0, the market likely isn't open yet today or its a weekend.
-            // Fetch the historical daily endpoint to extract statistics from the last valid session.
+//            If values are 0.0, the market isn't open yet today or its a weekend.
+//             Fetch the historical daily endpoint to extract statistics from the last valid session.
             if (openPrice == 0.0 || highPrice == 0.0 || lowPrice == 0.0) {
                 try {
                     val dailyResponse = RetrofitClient.api.getDaily(symbol = ticker)
 
-                    // Sort and pull the last active session's entry
+//                     Sort and pull the last active session's entry
                     val latestEntry = dailyResponse.timeSeries?.entries?.sortedBy { it.key }?.lastOrNull()
 
                     if (latestEntry != null) {
@@ -48,7 +48,7 @@ class StockRepository(private val dao: StockDao) {
                         highPrice = dailyData.high.toDoubleOrNull() ?: highPrice
                         lowPrice = dailyData.low.toDoubleOrNull() ?: lowPrice
 
-                        // compute the daily fallback change percent if needed
+//                         compute the daily fallback change percent if needed
                         val closePrice = dailyData.close.toDoubleOrNull() ?: 0.0
                         if (openPrice > 0.0) {
                             val rawPercentage = ((closePrice - openPrice) / openPrice) * 100
@@ -82,7 +82,7 @@ class StockRepository(private val dao: StockDao) {
         }
     }
 
-    // Sync stocks to the users Firestore backup
+//     Sync stocks to the users Firestore backup
     fun backupToFirestore(stock: StockEntity) {
         val db = Firebase.firestore
         val userId = Firebase.auth.currentUser?.uid ?: return
@@ -102,7 +102,7 @@ class StockRepository(private val dao: StockDao) {
             ))
     }
 
-    // Delete stock from users firestore backup
+//     Delete stock from users firestore backup
     fun deleteFromFirestore(ticker: String) {
         val db = Firebase.firestore
         val userId = Firebase.auth.currentUser?.uid ?: return
@@ -113,7 +113,7 @@ class StockRepository(private val dao: StockDao) {
             .delete()
     }
 
-    // Fetches all firestore docs and inserts them into the room db.
+//     Fetches all firestore docs and inserts them into the room db.
     suspend fun restoreFromFirestore() {
         val db = Firebase.firestore
         val userId = Firebase.auth.currentUser?.uid ?: return
@@ -141,7 +141,7 @@ class StockRepository(private val dao: StockDao) {
         }
     }
 
-    // Calls the daily time series endpoint from the API and separates it into distinct periods.
+    // Calls the daily time series endpoint from the API
     // Returns a list of (date, price) pairs so the chart can display labelled axes.
     suspend fun getChartData(ticker: String, period: String): List<Pair<String, Float>> {
         return try {

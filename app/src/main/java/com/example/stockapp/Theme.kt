@@ -4,11 +4,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// 1. EXACT BRAND PALETTE MATCHING YOUR MAIN BRANCH:
+
+// Defining the exact hex color codes used across the app layout
 val PureDarkBackground = Color(0xFF121212)
 val SolidCardSurface = Color(0xFF1E1E1E)
 val TextPrimaryWhite = Color(0xFFFFFFFF)
-val TextSecondaryGray = Color(0xB3FFFFFF) // 70% transparent white for subtitles
+val TextSecondaryGray = Color(0xB3FFFFFF)
 val AccentPurple = Color(0xFFBB86FC)
 val CustomGreen = Color(0xFF388E3C)
 val CustomRed = Color(0xFFD32F2F)

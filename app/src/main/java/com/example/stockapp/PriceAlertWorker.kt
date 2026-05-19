@@ -44,6 +44,7 @@ class PriceAlertWorker(
         return Result.success()
     }
 
+//    Notification for price alert
     private fun sendNotification(ticker: String, currentPrice: Double, targetPrice: Double) {
         val channelId = "price_alerts"
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

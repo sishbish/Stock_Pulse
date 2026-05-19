@@ -52,11 +52,11 @@ fun StockDetailScreen(
     var chartPoints by remember { mutableStateOf<List<Pair<String, Float>>>(emptyList()) }
     var isLoadingChart by remember { mutableStateOf(true) }
 
-    // automatically runs in the background whenever the user
-    // opens this page or clicks a different timeframe button ("1D", "1M", "1Y").
+//     automatically runs in the background whenever the user
+//     opens this page or clicks a different timeframe button 1D, 1M, 1Y
     LaunchedEffect(selectedTimeframe) {
         isLoadingChart = true
-        // Calls your Alpha Vantage getChartData repository function asynchronously
+        // calls Alpha Vantage getChartData repository function asynchronously
         val fetchedPoints = onFetchChartData(selectedTimeframe)
         chartPoints = fetchedPoints
         isLoadingChart = false
@@ -89,7 +89,7 @@ fun StockDetailScreen(
                     }
                 },
                 actions = {
-                    // Clicking the toolbar icon toggles the popup visible
+//                     Clicking the toolbar icon toggles the popup visible
                     IconButton(onClick = { showAlertDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
@@ -113,7 +113,7 @@ fun StockDetailScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Brand Header Section
+//             brand Header Section
             Text(
                 text = stock.companyName,
                 style = MaterialTheme.typography.headlineMedium,
@@ -152,7 +152,7 @@ fun StockDetailScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Core Price Displays
+//             price Displays
             Text(
                 text = "$${String.format("%.2f", stock.lastPrice)}",
                 fontSize = 54.sp,
@@ -217,7 +217,7 @@ fun StockDetailScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Interactive Timeframe Selector, 1D, 1M, 1Y
+//             Interactive Timeframe Selector, 1D, 1M, 1Y
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -251,7 +251,7 @@ fun StockDetailScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Statistics Grid Layout
+//             Statistics Grid Layout
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     GridStatRow(label = "Open:", value = "$${String.format("%.2f", stock.open)}")
@@ -266,7 +266,7 @@ fun StockDetailScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Price Range Slider Section
+//             Price Range Slider Section
             Text(
                 text = "Today's price range",
                 color = MaterialTheme.colorScheme.onBackground,
@@ -307,7 +307,7 @@ fun StockDetailScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Footer Action Buttons
+//             Footer Action Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -420,7 +420,7 @@ fun GridStatRow(label: String, value: String) {
     }
 }
 
-//creates real historical single line graph paths using floating point arrays directly retrieved from the api
+//creates line graph paths using arrays directly retrieved from the api
 @Composable
 fun SingleLineStockChart(
     points: List<Float>,
@@ -432,7 +432,7 @@ fun SingleLineStockChart(
     val axisColor = Color(0xFF888888)
     val labelColor = Color(0xFFAAAAAA)
 
-    // Format a "YYYY-MM-DD" date string down to "MMM DD" (e.g. "Jan 05")
+//     format a "YYYY-MM-DD" date string down to "MMM DD"
     fun formatDate(raw: String): String {
         return try {
             val parts = raw.split("-")
@@ -443,7 +443,7 @@ fun SingleLineStockChart(
         } catch (e: Exception) { raw }
     }
 
-    // Build the three X-axis label strings: first, middle, last date
+//     build the three X-axis label strings: first, middle, last date
     val xLabels: List<String> = if (dates.size >= 2) {
         val first = formatDate(dates.first())
         val mid   = formatDate(dates[dates.size / 2])
@@ -454,13 +454,12 @@ fun SingleLineStockChart(
     val yAxisWidthDp = 52.dp
     val xAxisHeightDp = 20.dp
 
-    // Outer row: Y-axis labels on the left, chart canvas on the right
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(180.dp)
     ) {
-        // --- Y-axis label column ---
+//         Y-axis
         val maxVal = points.maxOrNull() ?: 1f
         val minVal = points.minOrNull() ?: 0f
         val midVal = (maxVal + minVal) / 2f
@@ -483,10 +482,9 @@ fun SingleLineStockChart(
             }
         }
 
-        // --- Chart area: canvas + X-axis labels ---
+//         X-axis
         Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
 
-            // Line chart canvas
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -498,7 +496,7 @@ fun SingleLineStockChart(
                 val path = Path()
                 val nodeRadius = 2.5.dp.toPx()
 
-                // Horizontal gridlines at top, middle, bottom
+//                 horizontal gridlines at top, middle, bottom
                 listOf(0f, 0.5f, 1f).forEach { fraction ->
                     val y = size.height * (1f - fraction)
                     drawLine(
@@ -517,7 +515,7 @@ fun SingleLineStockChart(
                     if (index == 0) path.moveTo(currentX, currentY)
                     else path.lineTo(currentX, currentY)
 
-                    // Only draw node dots at first and last point to keep it clean
+//                     Only draw dots at first and last point to keep it clean
                     if (index == 0 || index == points.lastIndex) {
                         drawCircle(
                             color = Color.White,
@@ -529,7 +527,7 @@ fun SingleLineStockChart(
 
                 drawPath(path = path, color = lineBrushColor, style = Stroke(width = 2.5.dp.toPx()))
 
-                // Bottom axis line
+//                 Bottom axis line
                 drawLine(
                     color = axisColor.copy(alpha = 0.4f),
                     start = Offset(0f, size.height),
@@ -538,7 +536,7 @@ fun SingleLineStockChart(
                 )
             }
 
-            // X-axis date labels
+//             X-axis date labels
             if (xLabels.size == 3) {
                 Row(
                     modifier = Modifier
@@ -560,5 +558,3 @@ fun SingleLineStockChart(
         }
     }
 }
-
-private fun Int.bindPx(): Dp = this.dp

@@ -11,29 +11,35 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 
+//Add stock page. Takes the inputted stock and adds it to the page
 class AddStockFragment : Fragment() {
 
     private val viewModel: StockViewModel by viewModels()
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         return ComposeView(requireContext()).apply {
-            // Force legacy container to match your black theme background layout color
+            // Sets the background of the screen window to black
             setBackgroundColor(android.graphics.Color.parseColor("#121212"))
 
             setContent {
+                // Applies the custom visual styling rules
                 StockPulseTheme {
                     AddStockScreen(
                         onBackClick = {
+//                            Backwards navigation
                             findNavController().navigateUp()
                         },
                         onAddStockClick = { inputTicker ->
-                            // Calls the exact addStock signature with trailing lambda block from your branch
+                            // Takes the ticker text typed by the user and searches for it using the app storage logic
                             viewModel.addStock(inputTicker) {
                                 requireActivity().runOnUiThread {
+                                    // Pops up a toast at the bottom of the screen to tell the user the stock was processed.
                                     Toast.makeText(requireContext(), "$inputTicker processing complete", Toast.LENGTH_SHORT).show()
+                                    // Automatically closes the add page and goes back to the previous dashboard.
                                     findNavController().navigateUp()
                                 }
                             }

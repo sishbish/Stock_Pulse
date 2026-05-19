@@ -32,7 +32,7 @@ fun StockItemRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Side: Ticker and Company Name
+//             left side column: Ticker and Company Name
             Column {
                 Text(
                     text = stock.ticker,
@@ -45,14 +45,14 @@ fun StockItemRow(
                 )
             }
 
-            // Right Side: Price and Percentage Change
+//             right side column: Price and Percentage Change
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "$${String.format("%.2f", stock.lastPrice)}",
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                // Color text conditionally (Red for negative change, Green for positive)
+//                 red for negative change, green for positive
                 val isNegative = stock.changePercent.contains("-")
                 Text(
                     text = stock.changePercent,

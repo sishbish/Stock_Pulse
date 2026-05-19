@@ -17,8 +17,13 @@ fun LoginScreen(
     onLoginClick: (String, String) -> Unit,
     onRegisterNavigate: () -> Unit
 ) {
+//     Stores the text typed into the email entry box.
     var email by remember { mutableStateOf("") }
+
+//     Stores the text typed into the password entry box.
     var password by remember { mutableStateOf("") }
+
+//     Tracks if an error message warning should show up for empty input entries.
     var showError by remember { mutableStateOf(false) }
 
     Column(
@@ -28,19 +33,23 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+//         Main welcome title header at the top.
         Text(text = "Stock Pulse Login", style = MaterialTheme.typography.headlineLarge)
         Spacer(modifier = Modifier.height(32.dp))
 
+//         Outlined entry text field designed for email handling.
         OutlinedTextField(
             value = email,
             onValueChange = { email = it; showError = false },
             label = { Text("Email Address") },
+//             Switches the digital keyboard layout for email symbol keys.
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+//        entry text field designed for password handling.
         OutlinedTextField(
             value = password,
             onValueChange = { password = it; showError = false },
@@ -50,6 +59,7 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+//         draws a red warning label if blank input forms are submitted.
         if (showError) {
             Text(
                 text = "Fields cannot be blank",
@@ -62,9 +72,11 @@ fun LoginScreen(
 
         Button(
             onClick = {
+//                 makes sure neither box is empty before passing data forward.
                 if (email.isBlank() || password.isBlank()) {
                     showError = true
                 } else {
+//                     Sends the trimmed email and password inputs
                     onLoginClick(email.trim(), password.trim())
                 }
             },
@@ -75,8 +87,9 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Registration button
         TextButton(onClick = onRegisterNavigate) {
-            Text("Don't have an account? Register here")
+            Text("Register if you don't already have an account")
         }
     }
 }

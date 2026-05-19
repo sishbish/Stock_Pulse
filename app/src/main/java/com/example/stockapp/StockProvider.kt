@@ -87,12 +87,12 @@ class StockProvider : ContentProvider() {
             throw IllegalArgumentException("Unknown URI: $uri")
         }
 
-        // matching logic using target selection variables
+//         matching logic using target selection variables
         return if (selectionArgs != null && selectionArgs.isNotEmpty()) {
             val tickerToDelete = selectionArgs[0]
             dao.deleteByTickerSync(tickerToDelete)
         } else {
-            // bulk delete fallback when selection constraints are null
+//             bulk delete fallback when selection constraints are null
             dao.clearAllStocksSync()
         }
     }
