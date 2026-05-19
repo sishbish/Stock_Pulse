@@ -73,9 +73,9 @@ fun RegisterScreen(
 
         Button(
             onClick = {
-//                 makes sure the email isn't blank and the password is at least 6 characters long.
                 if (email.isBlank() || password.length < 6) {
-                    showError = true // Triggers the red error warning visibility state flag.
+                    showError = true
+                } else {
                     onRegisterClick(email.trim(), password.trim())
                 }
             },

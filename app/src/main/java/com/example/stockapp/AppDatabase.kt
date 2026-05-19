@@ -17,9 +17,13 @@ abstract class AppDatabase : RoomDatabase() {
 //        on schema version update, the database is wiped rather than migrated
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                Room.databaseBuilder(context, AppDatabase::class.java, "stockpulse_db")
-                    .fallbackToDestructiveMigration()
-                    .build().also { INSTANCE = it }
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "stockpulse_db"
+                ).fallbackToDestructiveMigration().build()
+                INSTANCE = instance
+                instance
             }
         }
     }
