@@ -31,32 +31,55 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun StockDetailScreen(
     stock: StockEntity,
+    onFetchChartData: suspend (String) -> List<Float>,
     onBackClick: () -> Unit,
     onExternalViewClick: () -> Unit,
     onAiAnalysisClick: () -> Unit,
     onShareClick: () -> Unit,
-    onConfirmPriceAlert: (Double) -> Unit // UPDATED: Changed from click listener to data emitter callback
+    onConfirmPriceAlert: (Double) -> Unit
 ) {
+//    tracks whether the user selected 1D, 1M, 1Y
     var selectedTimeframe by remember { mutableStateOf("1D") }
+//    Checks if stock had a negative return so that the colour changes accordingly
     val isNegative = stock.changePercent.contains("-")
 
-    // DIALOG STATE TRACKERS: Handles visibility and text processing safely
+//    tracks if the popup box should be visible
     var showAlertDialog by remember { mutableStateOf(false) }
+//    price alert value
     var alertPriceInput by remember { mutableStateOf("") }
 
+    // STORES ACTUAL HISTORY: Holds the real list of prices fetched from the web API.
+    var chartPoints by remember { mutableStateOf<List<Float>>(emptyList()) }
+    var isLoadingChart by remember { mutableStateOf(true) }
+
+    // ASYNC TRIGGER: Automatically runs in the background whenever the user
+    // opens this page or clicks a different timeframe button ("1D", "1M", "1Y").
+    LaunchedEffect(selectedTimeframe) {
+        isLoadingChart = true
+        // Calls your Alpha Vantage getChartData repository function asynchronously
+        val fetchedPoints = onFetchChartData(selectedTimeframe)
+        chartPoints = fetchedPoints
+        isLoadingChart = false
+    }
+
+//    converts stock prices into numbers
     val openPrice = stock.open.toFloat()
     val highPrice = stock.high.toFloat()
     val lowPrice = stock.low.toFloat()
     val lastPrice = stock.lastPrice.toFloat()
 
+//    checks if the values are valid
     val isChartDataValid = highPrice > 0f && lowPrice > 0f && highPrice != lowPrice
+
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+//        for toolbar header
         topBar = {
             TopAppBar(
                 title = { Text(text = "Back", color = MaterialTheme.colorScheme.onBackground, fontSize = 20.sp) },
                 navigationIcon = {
+//                    backwards navigation
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -79,6 +102,7 @@ fun StockDetailScreen(
             )
         }
     ) { innerPadding ->
+//        column layout structure
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -98,6 +122,7 @@ fun StockDetailScreen(
                 textAlign = TextAlign.Center
             )
 
+//            places the stock ticker and share button
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -111,6 +136,7 @@ fun StockDetailScreen(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
 
+//                share icon button
                 IconButton(
                     onClick = onShareClick,
                     modifier = Modifier.size(24.dp)
@@ -134,6 +160,7 @@ fun StockDetailScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
+//            green up arrow or red down arrow depending on price change
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 8.dp)
@@ -141,49 +168,55 @@ fun StockDetailScreen(
                 Text(
                     text = if (isNegative) "▼ " else "▲ ",
                     fontSize = 12.sp,
-                    color = if (isNegative) MaterialTheme.colorScheme.error else CustomGreen
+                    color = if (isNegative) MaterialTheme.colorScheme.error else Color(0xFF388E3C)
                 )
                 Text(
                     text = "${stock.changePercent} today",
                     fontSize = 13.sp,
-                    color = if (isNegative) MaterialTheme.colorScheme.error else CustomGreen,
+                    color = if (isNegative) MaterialTheme.colorScheme.error else Color(0xFF388E3C),
                     fontWeight = FontWeight.Medium
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Dynamic Multi-Line Trend Chart Context
-            if (isChartDataValid) {
-                DetailedMultiLineChart(
-                    open = openPrice,
-                    high = highPrice,
-                    low = lowPrice,
-                    close = lastPrice,
-                    timeframe = selectedTimeframe
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Historical chart data temporarily unavailable.\nCheck API rate limits or connection.",
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
+//            If there is valid API info then the chart is displayed
+//            If there isnt then show error message
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isLoadingChart) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                } else if (chartPoints.isNotEmpty() && isChartDataValid) {
+                    SingleLineStockChart(
+                        points = chartPoints,
+                        isNegative = isNegative
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Check API rate limits or connection.",
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Interactive Timeframe Selector
+            // Interactive Timeframe Selector, 1D, 1M, 1Y
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -200,6 +233,7 @@ fun StockDetailScreen(
                                 color = if (isSelected) Color(0x26FFFFFF) else Color.Transparent,
                                 shape = RoundedCornerShape(8.dp)
                             )
+//                            changes timeframe when clicked
                             .clickable { selectedTimeframe = timeframe }
                             .padding(vertical = 8.dp),
                         contentAlignment = Alignment.Center
@@ -241,6 +275,8 @@ fun StockDetailScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+//            range slider bar. Shows the daily high/low values and positions the slider to show
+//            where the current price sits between the two values
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -248,9 +284,11 @@ fun StockDetailScreen(
             ) {
                 Text(text = "$${stock.low}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
 
+//                calculating current percentage position on the bar
                 val currentRangeSpan = highPrice - lowPrice
                 val thumbPosition = if (currentRangeSpan > 0f) (lastPrice - lowPrice) / currentRangeSpan else 0.5f
 
+//                slider layout but turned off so user cant slide the bar
                 Slider(
                     value = thumbPosition.coerceIn(0f, 1f),
                     onValueChange = {},
@@ -275,6 +313,7 @@ fun StockDetailScreen(
                     .padding(bottom = 24.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+//                read full news button
                 Button(
                     onClick = onExternalViewClick,
                     modifier = Modifier
@@ -287,6 +326,7 @@ fun StockDetailScreen(
                     Text("Read Full News", color = Color.Black, fontWeight = FontWeight.Medium)
                 }
 
+//                ai analysis button
                 Button(
                     onClick = onAiAnalysisClick,
                     modifier = Modifier
@@ -302,7 +342,7 @@ fun StockDetailScreen(
         }
     }
 
-    // POPUP WINDOW CONTENT OVERLAY: Triggers when showAlertDialog is true
+//    popup alert window
     if (showAlertDialog) {
         AlertDialog(
             onDismissRequest = { showAlertDialog = false },
@@ -321,6 +361,7 @@ fun StockDetailScreen(
                         fontSize = 14.sp,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
+//                    text input box for price alert value
                     OutlinedTextField(
                         value = alertPriceInput,
                         onValueChange = { alertPriceInput = it },
@@ -337,9 +378,11 @@ fun StockDetailScreen(
                 }
             },
             confirmButton = {
+//                confirm action button
                 Button(
                     onClick = {
                         val parsedPrice = alertPriceInput.toDoubleOrNull()
+//                        validating the input value
                         if (parsedPrice != null && parsedPrice > 0.0) {
                             onConfirmPriceAlert(parsedPrice)
                             showAlertDialog = false // Dismiss popup window
@@ -352,6 +395,7 @@ fun StockDetailScreen(
                 }
             },
             dismissButton = {
+//                cancel button to back out of alert popup
                 TextButton(onClick = { showAlertDialog = false }) {
                     Text("Cancel", color = MaterialTheme.colorScheme.primary)
                 }
@@ -361,6 +405,7 @@ fun StockDetailScreen(
     }
 }
 
+//custom design block for the stats grid. Makes sure the stat labels and values are always inline
 @Composable
 fun GridStatRow(label: String, value: String) {
     Row(
@@ -374,68 +419,53 @@ fun GridStatRow(label: String, value: String) {
     }
 }
 
+//creates real historical single line graph paths using floating point arrays directly retrieved from the api
 @Composable
-fun DetailedMultiLineChart(open: Float, high: Float, low: Float, close: Float, timeframe: String) {
-    val multiplier = when (timeframe) {
-        "1M" -> 1.15f
-        "1Y" -> 1.45f
-        else -> 1.00f
-    }
-
-    val path1Data = listOf(open, (open + high) / 2f * multiplier, high * multiplier, (high + close) / 2f, close)
-    val path2Data = listOf(open, low / multiplier, (low + close) / 2f, high, close * multiplier)
-    val path3Data = listOf(open, (open + low) / 2f * multiplier, low, (low + high) / 2f * multiplier, close)
+fun SingleLineStockChart(
+    points: List<Float>,
+    isNegative: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val lineBrushColor = if (isNegative) MaterialTheme.colorScheme.error else Color(0xFF388E3C)
 
     Canvas(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(180.dp)
             .padding(vertical = 8.dp)
     ) {
-        val absoluteMax = maxOf(open, high * multiplier, low, close * multiplier)
-        val absoluteMin = minOf(open, high, low / multiplier, close)
+        val maxVal = points.maxOrNull() ?: 1f
+        val minVal = points.minOrNull() ?: 0f
+        val deltaY = maxVal - minVal
 
-        drawLivePath(path1Data, Color(0xFFFFAB91), absoluteMax, absoluteMin)
-        drawLivePath(path2Data, Color(0xFF80DEEA), absoluteMax, absoluteMin)
-        drawLivePath(path3Data, Color(0xFFC5CAE9), absoluteMax, absoluteMin)
-    }
-}
+        val distanceX = size.width / (if (points.size > 1) (points.size - 1) else 1).toFloat()
+        val path = Path()
+        val nodeRadius = 3.dp.toPx()
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLivePath(
-    points: List<Float>,
-    color: Color,
-    maxVal: Float,
-    minVal: Float
-) {
-    val deltaY = maxVal - minVal
-    val distanceX = size.width / (points.size - 1)
+        points.forEachIndexed { index, value ->
+            val currentX = index * distanceX
+            val normalizedY = if (deltaY > 0f) (value - minVal) / deltaY else 0.5f
+            val currentY = size.height - (normalizedY * size.height)
 
-    val path = Path()
-    val nodeRadius = 4.dp.toPx()
+            if (index == 0) {
+                path.moveTo(currentX, currentY)
+            } else {
+                path.lineTo(currentX, currentY)
+            }
 
-    points.forEachIndexed { index, value ->
-        val currentX = index * distanceX
-        val normalizedY = if (deltaY > 0f) (value - minVal) / deltaY else 0.5f
-        val currentY = size.height - (normalizedY * size.height)
-
-        if (index == 0) {
-            path.moveTo(currentX, currentY)
-        } else {
-            path.lineTo(currentX, currentY)
+            drawCircle(
+                color = Color.White,
+                radius = nodeRadius,
+                center = Offset(currentX, currentY)
+            )
         }
 
-        drawCircle(
-            color = Color.White,
-            radius = nodeRadius,
-            center = Offset(currentX, currentY)
+        drawPath(
+            path = path,
+            color = lineBrushColor,
+            style = Stroke(width = 2.5.dp.toPx())
         )
     }
-
-    drawPath(
-        path = path,
-        color = color,
-        style = Stroke(width = 2.dp.toPx())
-    )
 }
 
 private fun Int.bindPx(): Dp = this.dp

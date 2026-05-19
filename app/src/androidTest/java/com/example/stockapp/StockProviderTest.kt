@@ -11,12 +11,14 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+
 @RunWith(AndroidJUnit4::class)
 class StockProviderTest {
 
     private lateinit var context: Context
     private val contentUri: Uri = StockProvider.CONTENT_URI
 
+//    runs before every test method
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
@@ -24,9 +26,9 @@ class StockProviderTest {
         context.contentResolver.delete(contentUri, null, null)
     }
 
+//    creates a testing stock into a standard system ContentValues map
     @Test
     fun testInsertAndQueryStock() {
-        // Explicitly scoping constants to StockProvider to fix compilation failure
         val values = ContentValues().apply {
             put(StockProvider.COL_TICKER, "AAPL")
             put(StockProvider.COL_COMPANY_NAME, "Apple Inc.")
@@ -40,6 +42,7 @@ class StockProviderTest {
         val cursor: Cursor? = context.contentResolver.query(contentUri, null, null, null, null)
         assertNotNull("Cursor should not be null", cursor)
 
+//    runs a query to check if the retrieved cursor contains a row matching the original properties
         cursor?.use {
             assertTrue("Cursor should have at least one row", it.moveToFirst())
             assertEquals("AAPL", it.getString(it.getColumnIndexOrThrow(StockProvider.COL_TICKER)))
@@ -49,6 +52,7 @@ class StockProviderTest {
         }
     }
 
+//   inserts a test row then deletes it
     @Test
     fun testDeleteStock() {
         val values = ContentValues().apply {
@@ -76,6 +80,7 @@ class StockProviderTest {
         }
     }
 
+//    tests if passing null constraints to the content resolver clears out multiple rows
     @Test
     fun testBulkDelete() {
         val stock1 = ContentValues().apply {
@@ -86,7 +91,7 @@ class StockProviderTest {
         }
         context.contentResolver.insert(contentUri, stock1)
 
-        // Null criteria flags a full collection sweep / truncation event
+        // Null criteria flags a full collection sweep
         val deletedRows = context.contentResolver.delete(contentUri, null, null)
         assertTrue("Should delete at least one stock row item", deletedRows >= 1)
 

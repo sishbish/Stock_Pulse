@@ -40,8 +40,7 @@ interface StockDao {
     @Query("UPDATE watchlist SET targetPrice = :targetPrice WHERE ticker = :ticker")
     suspend fun setTargetPrice(ticker: String, targetPrice: Double)
 
-    // --- CRITICAL FIX: Synchronous wrappers matching your StockProvider requirements ---
-
+//allow contentProvider to work synchronously for the instrumentation lifecycle checks
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertStockSync(stock: StockEntity)
 

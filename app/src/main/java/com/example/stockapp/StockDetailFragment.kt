@@ -14,33 +14,42 @@ import androidx.navigation.fragment.findNavController
 
 class StockDetailFragment : Fragment() {
 
+
     private val viewModel: StockViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+//        gets the key parameter string passed when the user clicks a stock
         val ticker = arguments?.getString("ticker") ?: ""
 
         return ComposeView(requireContext()).apply {
             setBackgroundColor(android.graphics.Color.parseColor("#121212"))
 
             setContent {
+//                applies the custom styling
                 StockPulseTheme {
+//                    Pulls the watchlist data and updates the data in real time
                     val watchlist by viewModel.watchlist.observeAsState(initial = emptyList())
                     val stockEntity = watchlist.find { it.ticker.equals(ticker, ignoreCase = true) }
 
                     if (stockEntity != null) {
                         StockDetailScreen(
                             stock = stockEntity,
+                            onFetchChartData = { period ->
+                                viewModel.getChartData(stockEntity.ticker, period)
+                            },
+//                            backward navigatioin
                             onBackClick = { findNavController().navigateUp() },
                             onExternalViewClick = { /* ... */ },
                             onAiAnalysisClick = { /* ... */ },
                             onShareClick = { /* ... */ },
                             onConfirmPriceAlert = { targetAlertPrice ->
-                                // Executes Room update asynchronously on your background coroutine IO thread context
+//                                saves price alert to room db
                                 viewModel.setTargetPrice(stockEntity.ticker, targetAlertPrice)
 
+//                               shows toast to confirm user alert was saved
                                 android.widget.Toast.makeText(
                                     requireContext(),
                                     "Alert set for ${stockEntity.ticker.uppercase()} at $${String.format("%.2f", targetAlertPrice)}",

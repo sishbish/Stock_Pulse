@@ -32,7 +32,7 @@ class StockRepository(private val dao: StockDao) {
             var lowPrice = quote.low.toDoubleOrNull() ?: 0.0
             var calculatedChangePercent = quote.changePercent
 
-            //If values are 0.0, the market likely isn't open yet today.
+            //If values are 0.0, the market likely isn't open yet today or its a weekend.
             // Fetch the historical daily endpoint to extract statistics from the last valid session.
             if (openPrice == 0.0 || highPrice == 0.0 || lowPrice == 0.0) {
                 try {
@@ -60,7 +60,7 @@ class StockRepository(private val dao: StockDao) {
                 }
             }
 
-
+//          puts the data into a StockEntity object
             val entity = StockEntity(
                 ticker = quote.symbol,
                 companyName = ticker,
@@ -71,6 +71,8 @@ class StockRepository(private val dao: StockDao) {
                 low = lowPrice,
                 volume = quote.volume ?: "0"
             )
+
+//            saves object to room db
             dao.insertStock(entity)
             return entity
         } catch (e: Exception) {
@@ -146,7 +148,12 @@ class StockRepository(private val dao: StockDao) {
                 ?.sortedBy { it.key } ?: return emptyList()
 
             when (period) {
-                "1D" -> entries.takeLast(1).map { it.value.close.toFloat() }
+                // pulls the last 5 active completed sessions instead of 1
+                // so the single line graph layout has multiple data points to connect.
+                "1D" -> {
+                    val rawPoints = entries.takeLast(5).map { it.value.close.toFloat() }
+                    if (rawPoints.size < 2) emptyList() else rawPoints
+                }
                 "1M" -> entries.takeLast(30).map { it.value.close.toFloat() }
                 "1Y" -> entries.takeLast(252).map { it.value.close.toFloat() }
                 else -> emptyList()
