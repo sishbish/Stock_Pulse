@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -34,7 +35,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 //         Main welcome title header at the top.
-        Text(text = "Stock Pulse Login", style = MaterialTheme.typography.headlineLarge)
+        Text(text = "Stock Pulse Login", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFBB86FC))
         Spacer(modifier = Modifier.height(32.dp))
 
 //         Outlined entry text field designed for email handling.

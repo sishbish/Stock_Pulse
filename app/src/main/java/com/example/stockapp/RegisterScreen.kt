@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -35,7 +36,7 @@ fun RegisterScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 //         Main sign-up page header title text at the top of the screen.
-        Text(text = "Create Account", style = MaterialTheme.typography.headlineLarge)
+        Text(text = "Create Account", style = MaterialTheme.typography.headlineLarge, color = Color(0xFFBB86FC))
         Spacer(modifier = Modifier.height(32.dp))
 
 //         Outlined entry text field designed for email input handling.
